@@ -1,0 +1,196 @@
+NAME
+    Cassandra::Simple
+
+VERSION
+    version 0.1
+
+DESCRIPTION
+    Easy to use, Perl oriented client interface to Apache Cassandra.
+
+    This module attempts to abstract the underlying Thrift methods as much
+    as possible to allow any Perl developer a small learning curve when
+    using Cassandra.
+
+SYNOPSYS
+            None yet...
+
+  get
+    Usage: "get($column_family, $key[, opt])"
+
+    $opt is a *HASH* and can have the following keys:
+
+      columns, column_start, column_finish, column_count, column_reversed,
+      consistency_level_read
+
+    Returns an HASH of the form "{ column => value, column => value }"
+
+  multiget
+    Usage: "multiget($column_family, $keys[, opt])"
+
+    $keys should be an *ARRAYREF* of keys to fetch.
+
+    All parameters in $opt are the same as in "get()"
+
+    Returns an HASH of the form "{ key => { column => value, column => value
+    }, key => { column => value, column => value } }"
+
+  get_count
+    Usage: "get_count($column_family, $key[, opt])"
+
+    $opt is a *HASH* and can have the following keys:
+
+      columns, column_start, column_finish, consistency_level_read
+
+    Returns the count as an int
+
+  multiget_count
+    Usage: "multiget_count($column_family, $keys[, opt])"
+
+    $keys should be an *ARRAYREF* of keys.
+
+    All parameters in $opt are the same as in "get_count()"
+
+    Returns a mapping of "key -> count"
+
+  get_range
+    Usage: "get_range( $column_family[, opt])"
+
+    $opt is a *HASH* and can have the following keys:
+
+      start, finish, columns, column_start, column_finish, column_reversed,
+      column_count, row_count, consistency_level_read
+
+    Returns an *HASH* of the form "{ key => { column => value, column =>
+    value }, key => { column => value, column => value } }"
+
+  get_indexed_slices
+    Usage: "get_indexed_slices($column_family, $index_clause[, opt])"
+
+    $index_clause is an *HASH* containing the following keys:
+
+      expression_list, start_key, row_count
+
+      The *expression_list* is an *ARRAYREF* of the form "[ [ column =>
+      value ] ]"
+
+    $opt is an *HASH* and can have the following keys:
+
+      columns, column_start, column_finish, column_reversed, column_count,
+      consistency_level_read
+
+    Returns an *HASH* of the form "{ key => { column => value, column =>
+    value }, key => { column => value, column => value } }"
+
+  insert
+    Usage: "insert($column_family, $key, $columns[, opt])"
+
+    The *expression_list* is an *ARRAYREF* of the form "[ [ column => value
+    ] ]"
+
+    $opt is an *HASH* and can have the following keys:
+
+      timestamp, ttl, consistency_level_write
+
+  batch_insert
+    Usage: "batch_insert($column_family, $rows[, opt])"
+
+    $rows is an *HASH* of the form "{ key => [ [ column => value ] , [
+    column => value ] ], key => [ [ column => value ] , [ column => value ]
+    ] }"
+
+    $opt is an *HASH* and can have the following keys:
+
+      timestamp, ttl, consistency_level_write
+
+  remove
+    Usage: "remove($column_family[, $keys][, opt])"
+
+    $keys is an *ARRAY* of keys to be deleted.
+
+    A removal whitout keys truncates the whole column_family.
+
+    $opt is an *HASH* and can have the following keys:
+
+      columns, super_column, write_consistency_level
+
+    The timestamp used for remove is returned.
+
+BUGS
+    Bugs should be reported on github at
+    <https://github.com/fmgoncalves/p5-cassandra-simple>.
+
+TODO
+    Unit Tests
+
+    Methods
+
+    The following are Thrift methods left unimplemented.
+
+    Not all of these will be implemented, since some aren't useful to the
+    common developer.
+
+    Priority will be given to live schema updating methods.
+
+      describe_cluster_name
+
+      string describe_cluster_name()
+
+      describe_keyspace
+
+      KsDef describe_keyspace(string keyspace)
+
+      describe_keyspaces
+
+      list<KsDef> describe_keyspaces()
+
+      describe_partitioner
+
+      string describe_partitioner()
+
+      describe_ring
+
+      list<TokenRange> describe_ring(keyspace)
+
+      describe_snitch
+
+      string describe_snitch()
+
+      describe_version
+
+      string describe_version()
+
+      system_add_column_family
+
+      string system_add_column_family(CFDef cf_def)
+
+      system_drop_column_family
+
+      string system_drop_column_family(ColumnFamily column_family)
+
+      system_add_keyspace
+
+      string system_add_keyspace(KSDef ks_def)
+
+      system_drop_keyspace
+
+      string system_drop_keyspace(string keyspace)
+
+ACKNOWLEDGEMENTS
+    Implementation based on Cassandra::Lite.
+
+      <http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite
+      .pm>
+
+    API based on Pycassa.
+
+      <http://pycassa.github.com/pycassa/>
+
+AUTHOR
+    Filipe Gonçalves "<the.wa.syndrome@gmail>"
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2011 by Filipe Gonçalves.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
+
