@@ -13,7 +13,7 @@ use Cassandra::Simple;
 #
 
 sub println {
-	print $_ foreach @_, "\n";
+	print @_, "\n";
 }
 
 my ($keyspace, $column_family) = qw/simple simple/;
@@ -32,7 +32,7 @@ my $conn = Cassandra::Simple->new(
 #Method to test					code here		success
 #get							100%			100%
 #multiget						100%			100%
-#get_count						0%				0%
+#get_count						100%			100%
 #multiget_count					100%			100%
 #get_range						100%			100%
 #get_indexed_slices				100%			100%
@@ -77,8 +77,12 @@ println "\$conn->remove($column_family, [ 'ChaveA' ], { columns => [ 'ColunaA1' 
 println Dumper $conn->remove($column_family, [ 'ChaveA' ], { columns => [ 'ColunaA1' ]});
 
 println "\$conn->multiget_count($column_family, ['ChaveA', 'ChaveB'])";
-println Dumper $conn->multiget_count($column_family, ['ChaveA', 'ChaveB']);
+println Dumper$conn->get_count($column_family, 'whisky2');
 #Expected result: ChaveA -> 1, ChaveB -> 2
+
+println "\$conn->get_count($column_family, 'whisky2')";
+println Dumper $conn->get_count($column_family, 'whisky2');
+#Expected result: 1
 
 println "\$conn->remove($column_family)";
 println Dumper $conn->remove($column_family);

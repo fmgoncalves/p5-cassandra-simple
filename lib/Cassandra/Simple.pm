@@ -23,7 +23,34 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 =head1 SYNOPSYS
 
-	None yet...
+	#Assuming the keyspace 'simple' and the column family 'simple' exist
+
+	my ($keyspace, $column_family) = qw/simple simple/;
+	
+	my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
+	
+	$conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
+	
+	$conn->get($column_family, 'KeyA');
+	$conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
+	$conn->get($column_family, 'KeyA', { column_count => 1, column_reversed => 1 });
+	
+	$conn->batch_insert($column_family, { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
+	
+	$conn->multiget($column_family, [qw/KeyA KeyC/]);
+	
+	$conn->get_range($column_family, { start=> 'KeyA', finish => 'KeyB', column_count => 1 });
+	$conn->get_range($column_family);
+	
+	$conn->get_indexed_slices($column_family, { expression_list => [ [ 'ColumnA' => 'BA' ] ] });
+	
+	$conn->remove($column_family, [ 'KeyA' ], { columns => [ 'ColumnA' ]});
+	$conn->remove($column_family, [ 'KeyA' ]);
+	$conn->remove($column_family);
+	
+	$conn->get_count($column_family, 'KeyA');
+	$conn->multiget_count($column_family, [ 'KeyB', 'KeyC' ]);
+
 
 =cut
 
@@ -173,11 +200,11 @@ sub get {
 	my $result =
 	  $self->client->get_slice( $key, $columnParent, $predicate, $level );
 
-	my @result_columns = map {
-		{ $_->{column}->{name} => $_->{column}->{value} }
+	my %result_columns = map {
+		$_->{column}->{name} => $_->{column}->{value} 
 	} @{$result};
 
-	return @result_columns;
+	return %result_columns;
 }
 
 =head2 multiget
@@ -223,12 +250,12 @@ sub multiget {
 	my $result =
 	  $self->client->multiget_slice( $keys, $columnParent, $predicate, $level );
 
-	my @result_columns = map {
+	my %result_columns = map {
 		map { $_->{column}->{name} => $_->{column}->{value} }
 		  @{ $result->{$_} }
 	} keys %$result;
 
-	return @result_columns;
+	return %result_columns;
 }
 
 =head2 get_count
@@ -379,14 +406,13 @@ sub get_range {
 	  $self->client->get_range_slices( $columnParent, $predicate,
 									   $keyRange,     $level );
 
-	my @result_columns = map {
-		{
-			map { $_->{column}->{name} => $_->{column}->{value} }
-			  @{ $_->{columns} }
-		}
+	my %result_columns = map {
+			$_->{key} => {map { $_->{column}->{name} => $_->{column}->{value} }
+			  @{ $_->{columns} } }
+		
 	} @{$result};
 
-	return @result_columns;
+	return %result_columns;
 }
 
 =head2 get_indexed_slices
@@ -471,8 +497,8 @@ sub get_indexed_slices {
 										 $predicate, $level );
 
 	my %result_keys = map {
-		$_->{key} => [ map { $_->{column}->{name} => $_->{column}->{value} }
-					   @{ $_->{columns} } ]
+		$_->{key} => { map { $_->{column}->{name} => $_->{column}->{value} }
+					   @{ $_->{columns} } }
 	} @{$result};
 
 	return %result_keys;
