@@ -141,11 +141,26 @@ SYNOPSYS
 
     The timestamp used for remove is returned.
 
+  list_keyspace_cfs
+    Usage: "list_keyspace_cfs($keyspace)"
+
+    Returns an HASH of "{ column_family_name => column_family_type }" where
+    column family type is either "Standard" or "Super"
+
+  create_column_family
+    Usage "create_column_family($keyspace, $column_family[, $is_super][,
+    $comment])"
+
+    $is_super is a boolean indicating if this is a Standard or Super Column
+    Family.
+
 BUGS
     Bugs should be reported on github at
     <https://github.com/fmgoncalves/p5-cassandra-simple>.
 
 TODO
+    SuperColumn Support
+
     Unit Tests
 
     Methods

@@ -684,6 +684,49 @@ sub remove {
 	}
 }
 
+=head2 list_keyspace_cfs
+
+Usage: C<< list_keyspace_cfs($keyspace) >>
+
+Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super> 
+
+=cut
+sub list_keyspace_cfs {
+	my ($self, $keyspace) = @_;
+	my $result = $self->client->describe_keyspace($keyspace);
+
+	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
+}
+
+#TODO: Doc
+=head2 create_column_family
+
+Usage C<< create_column_family($keyspace, $column_family[, $is_super][, $comment]) >>
+
+C<$is_super> is a boolean indicating if this is a Standard or Super Column Family.
+
+=cut
+
+sub create_column_family{
+	my $self = shift;
+	
+	my $keyspace = shift;
+	my $column_family= shift;
+	my $is_super = shift // 0;
+	my $comment = shift // 0;
+	
+	my $cfdef = Cassandra::CfDef->new();
+	
+	$cfdef->{name} = $column_family;
+	$cfdef->{keyspace} = $keyspace;
+	$cfdef->{comment} = $comment;
+	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
+	
+	print Dumper $cfdef;
+	
+	$self->client->system_add_column_family($cfdef);
+}
+
 =head1 BUGS
 
 Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassandra-simple>.
@@ -693,6 +736,8 @@ Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassand
 #TODO TODOs
 
 =head1 TODO
+
+B<SuperColumn Support>
 
 B<Unit Tests>
 
