@@ -12,11 +12,11 @@ DESCRIPTION
     using Cassandra.
 
 SYNOPSYS
-            #Assuming the keyspace 'simple' and the column family 'simple' exist
-
             my ($keyspace, $column_family) = qw/simple simple/;
         
             my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
+        
+            $conn->create_column_family( $keyspace, $column_family);
         
             $conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
         
@@ -118,7 +118,7 @@ SYNOPSYS
       timestamp, ttl, consistency_level_write
 
   insert_super
-    Usage: "insert($column_family, $key, $columns[, opt])"
+    Usage: "insert_super($column_family, $key, $columns[, opt])"
 
     The $columns is an *HASH* of the form "{ super_column => { column =>
     value, column => value } }"

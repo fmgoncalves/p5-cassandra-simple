@@ -61,7 +61,6 @@ println "\$conn->get_count($column_family, 'KeyA')";
 println Dumper $conn->get_count($column_family, 'KeyA');
 #Expected result: 3
 
-
 ##NOT IMPLEMENTED IN CASSANDRA YET
 #println "\$conn->remove($column_family, ['KeyA'], {super_column => 'SuperColumnC'})";
 #println Dumper $conn->remove($column_family, ['KeyA'], {super_column => 'SuperColumnC'});

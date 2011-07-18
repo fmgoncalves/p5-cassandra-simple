@@ -21,11 +21,11 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 =head1 SYNOPSYS
 
-	#Assuming the keyspace 'simple' and the column family 'simple' exist
-
 	my ($keyspace, $column_family) = qw/simple simple/;
 	
 	my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
+	
+	$conn->create_column_family( $keyspace, $column_family);
 	
 	$conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
 	
@@ -541,7 +541,7 @@ sub get_indexed_slices {
 
 Usage: C<< insert($column_family, $key, $columns[, opt]) >>
 	
-The C<$columns> is an I<ARRAYREF> of the form C<< [ [ column => value ] ] >>
+The C<$columns> is an I<HASHREF> of the form C<< { column => value, column => value } >>
 	
 C<$opt> is an I<HASH> and can have the following keys:
 
@@ -574,8 +574,8 @@ sub insert {
 								 column =>
 								   new Cassandra::Column(
 									  {
-										name      => $_->[0],
-										value     => $_->[1],
+										name      => $_,
+										value     => $columns->{$_},
 										timestamp => $opt->{timestamp} // time,
 										ttl       => $opt->{ttl} // undef,
 									  }
@@ -584,7 +584,7 @@ sub insert {
 							)
 						}
 		  )
-	} @{$columns};
+	} keys % $columns;
 
 	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
 								 $level );
@@ -592,7 +592,7 @@ sub insert {
 
 =head2 insert_super
 
-Usage: C<< insert($column_family, $key, $columns[, opt]) >>
+Usage: C<< insert_super($column_family, $key, $columns[, opt]) >>
 	
 The C<$columns> is an I<HASH> of the form C<< { super_column => { column => value, column => value } } >>
 	
@@ -657,7 +657,7 @@ sub insert_super {
 
 Usage: C<batch_insert($column_family, $rows[, opt])>
 
-C<$rows> is an I<HASH> of the form C<< { key => [ [ column => value ] , [ column => value ] ], key => [ [ column => value ] , [ column => value ] ] } >>
+C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
 	
 C<$opt> is an I<HASH> and can have the following keys:
 

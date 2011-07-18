@@ -40,8 +40,8 @@ my $conn = Cassandra::Simple->new(
 #batch_insert					100%			100%
 #remove							100%			100%
 
-println "\$conn->insert($column_family, 'ChaveA', [ [ 'ColunaA1' => 'ValorA1' ], [ 'ColunaA2' => 'ValorA2' ] ] )";
-$conn->insert($column_family, 'ChaveA', [ [ 'ColunaA1' => 'ValorA1' ], [ 'ColunaA2' => 'ValorA2' ] ] );
+println "\$conn->insert($column_family, 'ChaveA', { 'ColunaA1' => 'ValorA1' , 'ColunaA2' => 'ValorA2' } )";
+$conn->insert($column_family, 'ChaveA', { 'ColunaA1' => 'ValorA1' , 'ColunaA2' => 'ValorA2' } );
 
 println "\$conn->get($column_family, 'ChaveA', { columns => [ qw/ColunaA1/ ] })";
 println Dumper $conn->get($column_family, 'ChaveA', { columns => [ qw/ColunaA1/ ] });
@@ -49,7 +49,7 @@ println Dumper $conn->get($column_family, 'ChaveA', { columns => [ qw/ColunaA1/ 
 
 println "\$conn->get($column_family, 'ChaveA')";
 println Dumper $conn->get($column_family, 'ChaveA');
-#Expected result: [ [ 'ColunaA1' => 'ValorA1' ], [ 'ColunaA2' => 'ValorA2' ] ]
+#Expected result: { 'ColunaA1' => 'ValorA1', 'ColunaA2' => 'ValorA2' }
 
 println "\$conn->get($column_family, 'ChaveA', { column_count => 1, column_reversed => 1 })";
 println Dumper $conn->get($column_family, 'ChaveA', { column_count => 1, column_reversed => 1 });
