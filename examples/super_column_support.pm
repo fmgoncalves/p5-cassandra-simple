@@ -35,7 +35,7 @@ println "\$conn->insert($column_family, 'KeyA', { 'SuperColumnA' => { 'SubColumn
 $conn->insert_super($column_family, 'KeyA', {'SuperColumnA' =>  {'SubColumnA' => 'AAA', 'SubColumnB' => 'AAB'}, 'SuperColumnB' => {'SubColumnA' => 'ABA', 'SubColumnB' => 'ABB'}, 'SuperColumnC' => {'SubColumnA' => 'ACA', 'SubColumnB' => 'ACB'}  });
 
 println "\$conn->get($column_family, 'KeyA')";
-println Dumper { $conn->get($column_family, 'KeyA') };
+println Dumper $conn->get($column_family, 'KeyA');
 #Expected result: both supercolumns with all four subcolumns
 
 println "\$conn->get($column_family, 'KeyA', { columns => ['SuperColumnB'] }  )";

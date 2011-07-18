@@ -276,8 +276,8 @@ sub multiget {
 	  $self->client->multiget_slice( $keys, $columnParent, $predicate, $level );
 
 	my %result_columns = map {
-		$_ => {map { $_->{column}->{name} => $_->{column}->{value} }
-		  @{ $result->{$_} }}
+		$_ => { map { $_->{column}->{name} => $_->{column}->{value} }
+				@{ $result->{$_} } }
 	} keys %$result;
 
 	return \%result_columns;
@@ -704,7 +704,7 @@ sub batch_insert {
 							 )
 						}
 					);
-				  } keys % $columns
+				  } keys %$columns
 			]
 		  }
 	} keys %$rows;
@@ -821,9 +821,49 @@ sub create_column_family {
 	$cfdef->{comment}     = $comment;
 	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
 
-	print Dumper $cfdef;
-
 	$self->client->system_add_column_family($cfdef);
+}
+
+
+=head2 create_index
+
+Usage: C<< create_index($keyspace, $column_family, $column, [$validation_class]) >>
+
+Creates an index on C<$column> of C<$column_family>.
+
+$validation_class only applies when $column doesn't yet exist, and even then it is optional (defaults to BytesType).
+
+=cut
+sub create_index{
+	my $self = shift;
+
+	my $keyspace      = shift;
+	my $column_family = shift;
+	my $column = shift;
+	
+	#TODO: get column family definition, substitute the target column with itself but indexed.
+	
+	my $cfdef = [grep {$_->{name} eq $column_family } @{ $self->client->describe_keyspace($keyspace)->{cf_defs} }]->[0];
+	
+	my $cdef;
+	if(@{ $cfdef->{column_metadata} } and grep {$_->{name} eq $column } @{ $cfdef->{column_metadata} }){
+		$cdef = [grep {$_->{name} eq $column } @{ $cfdef->{column_metadata} }]->[0];
+	}else{
+		$cdef = new Cassandra::ColumnDef({
+			name => $column,
+			validation_class => 'org.apache.cassandra.db.marshal.BytesType',
+		});
+	}
+	$cdef->{index_type} = 0;
+	$cdef->{index_name} = $column . "_idx";
+	
+	
+	$cfdef->{column_metadata} = [grep {$_->{name} ne $column } @{ $cfdef->{column_metadata} }];
+	push @{ $cfdef->{column_metadata} }, $cdef;
+	
+	print Dumper $cfdef;
+	
+	$self->client->system_update_column_family($cfdef);
 }
 
 =head1 BUGS

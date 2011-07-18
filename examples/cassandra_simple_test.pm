@@ -5,13 +5,6 @@ use Data::Dumper;
 
 use Cassandra::Simple;
 
-#### RUN THESE COMMANDS ON CASSANDRA-CLI FIRST ####
-#
-#create keyspace simple;
-#use simple;
-#create column family simple with comparator= UTF8Type and column_metadata = [ {column_name: age, validation_class: UTF8Type, index_type: KEYS} ];
-#
-
 sub println {
 	print @_, "\n";
 }
@@ -19,15 +12,15 @@ sub println {
 my ($keyspace, $column_family) = qw/simple simple/;
 
 my $conn = Cassandra::Simple->new(
-	server_name => '127.0.0.1',    # optional, default to '127.0.0.1'
-	server_port => 9160,           # optional, default to 9160
-	username    => '',             # optional, default to empty string ''
-	password    => '',             # optional, default to empty string ''
-	consistency_level_read  => 'QUORUM',    # optional, default to 'ONE'
-	consistency_level_write => 'ONE',       # optional, default to 'ONE'
 	keyspace                => $keyspace,
 );
 
+my $present = grep { $_ eq $column_family } @{[ $conn->list_keyspace_cfs($keyspace) ]};
+
+unless ( $present ){
+	println "Creating $column_family in $keyspace";
+	$conn->create_column_family($keyspace, $column_family);
+}
 
 #Method to test					code here		success
 #get							100%			100%
@@ -65,6 +58,10 @@ println Dumper $conn->multiget($column_family, [qw/ChaveA ChaveC/]);
 println "\$conn->get_range($column_family, { start=> 'ChaveA', finish => 'ChaveB', column_count => 1 })";
 println Dumper $conn->get_range($column_family, { start=> 'ChaveA', finish => 'ChaveB', column_count => 1 });
 #Expected result: Depends on key order inside Cassandra. Probably only these 2 keys are returned with 1 column each.
+
+
+println "\$conn->create_index($keyspace, $column_family, 'age')";
+println Dumper $conn->create_index($keyspace, $column_family, 'age');
 
 println "\$conn->batch_insert($column_family, { 'whisky1' => { 'age' => 12 }, 'whisky2' => { 'age' => 12 }, 'whisky3' => { 'age' => 15 }, 'whisky4' => { 'age' => 12 } })";
 println Dumper $conn->batch_insert($column_family, { 'whisky1' => { 'age' => 12 }, 'whisky2' => { 'age' => 12 }, 'whisky3' => { 'age' => 15 }, 'whisky4' => { 'age' => 12 } });
