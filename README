@@ -111,7 +111,8 @@ SYNOPSYS
   insert
     Usage: "insert($column_family, $key, $columns[, opt])"
 
-    The $columns is an *ARRAYREF* of the form "[ [ column => value ] ]"
+    The $columns is an *HASHREF* of the form "{ column => value, column =>
+    value }"
 
     $opt is an *HASH* and can have the following keys:
 
@@ -130,9 +131,8 @@ SYNOPSYS
   batch_insert
     Usage: "batch_insert($column_family, $rows[, opt])"
 
-    $rows is an *HASH* of the form "{ key => [ [ column => value ] , [
-    column => value ] ], key => [ [ column => value ] , [ column => value ]
-    ] }"
+    $rows is an *HASH* of the form "{ key => { column => value , column =>
+    value }, key => { column => value , column => value } }"
 
     $opt is an *HASH* and can have the following keys:
 
@@ -163,6 +163,15 @@ SYNOPSYS
 
     $is_super is a boolean indicating if this is a Standard or Super Column
     Family.
+
+  create_index
+    Usage: "create_index($keyspace, $column_family, $column,
+    [$validation_class])"
+
+    Creates an index on $column of $column_family.
+
+    $validation_class only applies when $column doesn't yet exist, and even
+    then it is optional (defaults to BytesType).
 
 BUGS
     Bugs should be reported on github at
