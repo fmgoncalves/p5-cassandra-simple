@@ -24,9 +24,9 @@ my $conn = Cassandra::Simple->new(
 #get_count						100%			100%
 #remove							100%			50% (Slice predicates on deletions are yet unimplemented in Cassandra)
 
-my $not_there = grep { $_ eq $column_family } [$conn->list_keyspace_cfs($keyspace)];
+my $present = grep { $_ eq $column_family } @{[ $conn->list_keyspace_cfs($keyspace) ]};
 
-if ( $not_there ){
+unless ( $present ){
 	println "Creating $column_family in $keyspace";
 	$conn->create_column_family($keyspace, $column_family, 1);
 }

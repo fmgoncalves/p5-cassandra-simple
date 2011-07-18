@@ -13,19 +13,19 @@ my ( $keyspace, $column_family ) = qw/simple simple/;
 
 my $conn = Cassandra::Simple->new( keyspace => $keyspace, );
 
-my $not_there =
-  grep { $_ eq $column_family }[ $conn->list_keyspace_cfs($keyspace) ];
+my $present =
+  grep { $_ eq $column_family } @{[ $conn->list_keyspace_cfs($keyspace) ]};
 
-if ($not_there) {
+unless ($present) {
 	println "Creating $column_family in $keyspace";
 	$conn->create_column_family( $keyspace, $column_family, 1 );
 }
 
-println "\$conn->insert($column_family, 'DyingKey', [ [ 'C1' => 'Dead1' ], [ 'C2' => 'Dead2' ] ], { ttl => 20 } )";
-$conn->insert($column_family, 'DyingKey', [ [ 'C1' => 'Dead1' ], [ 'C2' => 'Dead2' ] ], { ttl => 20 } );
+println "\$conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } )";
+$conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } );
 
-println "\$conn->insert($column_family, 'DyingKey', [ [ 'C3' => 'Dead3' ] ], { ttl => 30 })";
-$conn->insert($column_family, 'DyingKey', [ [ 'C3' => 'Dead3' ] ], { ttl => 30 });
+println "\$conn->insert($column_family, 'DyingKey', { 'C3' => 'Dead3' } , { ttl => 30 })";
+$conn->insert($column_family, 'DyingKey', { 'C3' => 'Dead3' } , { ttl => 30 });
 
 println "\$conn->get($column_family, 'DyingKey')";
 println Dumper $conn->get($column_family, 'DyingKey');

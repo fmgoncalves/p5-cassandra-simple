@@ -229,7 +229,7 @@ sub get {
 		$a->[0] => $a->[1]
 	  } @{$result};
 
-	return %result_columns;
+	return \%result_columns;
 }
 
 =head2 multiget
@@ -276,11 +276,11 @@ sub multiget {
 	  $self->client->multiget_slice( $keys, $columnParent, $predicate, $level );
 
 	my %result_columns = map {
-		map { $_->{column}->{name} => $_->{column}->{value} }
-		  @{ $result->{$_} }
+		$_ => {map { $_->{column}->{name} => $_->{column}->{value} }
+		  @{ $result->{$_} }}
 	} keys %$result;
 
-	return %result_columns;
+	return \%result_columns;
 }
 
 =head2 get_count
@@ -442,10 +442,11 @@ sub get_range {
 									   $keyRange,     $level );
 
 	my %result_columns = map {
-		$_->{key} => [ map { $self->_column_or_supercolumn_to_hash($_) } @{$_->{columns} } ]
+		$_->{key} => [ map { $self->_column_or_supercolumn_to_hash($_) }
+					   @{ $_->{columns} } ]
 	} @{$result};
 
-	return %result_columns;
+	return \%result_columns;
 }
 
 =head2 get_indexed_slices
@@ -534,7 +535,7 @@ sub get_indexed_slices {
 					   @{ $_->{columns} } }
 	} @{$result};
 
-	return %result_keys;
+	return \%result_keys;
 }
 
 =head2 insert
@@ -584,7 +585,7 @@ sub insert {
 							)
 						}
 		  )
-	} keys % $columns;
+	} keys %$columns;
 
 	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
 								 $level );
@@ -681,6 +682,7 @@ sub batch_insert {
 	my $level = $self->_consistency_level_write($opt);
 
 	my %mutation_map = map {
+		my $columns = $rows->{$_};
 		$_ => {
 			$column_family => [
 				map {
@@ -692,8 +694,8 @@ sub batch_insert {
 								  column =>
 									new Cassandra::Column(
 									  {
-										 name      => $_->[0],
-										 value     => $_->[1],
+										 name      => $_,
+										 value     => $columns->{$_},
 										 timestamp => $opt->{timestamp} // time,
 										 ttl       => $opt->{ttl} // undef,
 									  }
@@ -702,7 +704,7 @@ sub batch_insert {
 							 )
 						}
 					);
-				  } @{ $rows->{$_} }
+				  } keys % $columns
 			]
 		  }
 	} keys %$rows;

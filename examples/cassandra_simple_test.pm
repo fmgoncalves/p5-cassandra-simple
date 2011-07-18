@@ -55,8 +55,8 @@ println "\$conn->get($column_family, 'ChaveA', { column_count => 1, column_rever
 println Dumper $conn->get($column_family, 'ChaveA', { column_count => 1, column_reversed => 1 });
 #Expected result: only one column, the last given by get($column_family, 'ChaveA')
 
-println "\$conn->batch_insert($column_family, { 'ChaveB' => [ [ 'ColunaB1' => 'ValorB1' ] , [ 'ColunaB2' => 'ValorB2' ] ], 'ChaveC' => [ [ 'ColunaC1' => 'ValorC1' ] , [ 'ColunaC2' => 'ValorC2' ] ] })";
-println Dumper $conn->batch_insert($column_family, { 'ChaveB' => [ [ 'ColunaB1' => 'ValorB1' ] , [ 'ColunaB2' => 'ValorB2' ] ], 'ChaveC' => [ [ 'ColunaC1' => 'ValorC1' ] , [ 'ColunaC2' => 'ValorC2' ] ] });
+println "\$conn->batch_insert($column_family, { 'ChaveB' => {'ColunaB1' => 'ValorB1' , 'ColunaB2' => 'ValorB2' }, 'ChaveC' => { 'ColunaC1' => 'ValorC1' , 'ColunaC2' => 'ValorC2' } })";
+println Dumper $conn->batch_insert($column_family, { 'ChaveB' => {'ColunaB1' => 'ValorB1' , 'ColunaB2' => 'ValorB2' }, 'ChaveC' => { 'ColunaC1' => 'ValorC1' , 'ColunaC2' => 'ValorC2' } });
 
 println "\$conn->multiget($column_family, [ qw/ChaveA ChaveC/ ])";
 println Dumper $conn->multiget($column_family, [qw/ChaveA ChaveC/]);
@@ -66,8 +66,8 @@ println "\$conn->get_range($column_family, { start=> 'ChaveA', finish => 'ChaveB
 println Dumper $conn->get_range($column_family, { start=> 'ChaveA', finish => 'ChaveB', column_count => 1 });
 #Expected result: Depends on key order inside Cassandra. Probably only these 2 keys are returned with 1 column each.
 
-println "\$conn->batch_insert($column_family, { 'whisky1' => [ ['age' => 12] ], 'whisky2' => [ ['age' => 12] ], 'whisky3' => [ ['age' => 15] ], 'whisky4' => [ ['age' => 12] ] })";
-println Dumper $conn->batch_insert($column_family, { 'whisky1' => [ ['age' => 12] ], 'whisky2' => [ ['age' => 12] ], 'whisky3' => [ ['age' => 15] ], 'whisky4' => [ ['age' => 12] ] });
+println "\$conn->batch_insert($column_family, { 'whisky1' => { 'age' => 12 }, 'whisky2' => { 'age' => 12 }, 'whisky3' => { 'age' => 15 }, 'whisky4' => { 'age' => 12 } })";
+println Dumper $conn->batch_insert($column_family, { 'whisky1' => { 'age' => 12 }, 'whisky2' => { 'age' => 12 }, 'whisky3' => { 'age' => 15 }, 'whisky4' => { 'age' => 12 } });
 
 println "\$conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' => '12' ] ] })";
 println Dumper $conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' => '12' ] ] });
