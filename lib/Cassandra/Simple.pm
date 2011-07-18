@@ -1,7 +1,5 @@
 package Cassandra::Simple;
 
-#TODO Synopsys
-
 =pod
 
 =encoding utf8
@@ -567,7 +565,6 @@ sub insert {
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 	my $level = $self->_consistency_level_write($opt);
 
-	#TODO: ttl in column
 	my @mutations = map {
 		new Cassandra::Mutation(
 						{
@@ -621,7 +618,6 @@ sub insert_super {
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 	my $level = $self->_consistency_level_write($opt);
 
-	#TODO: ttl in column
 	my @mutations = map {
 		my $arg = $_;
 		new Cassandra::Mutation(
@@ -684,7 +680,6 @@ sub batch_insert {
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 	my $level = $self->_consistency_level_write($opt);
 
-	#TODO: ttl in column
 	my %mutation_map = map {
 		$_ => {
 			$column_family => [
@@ -801,8 +796,6 @@ sub list_keyspace_cfs {
 	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
 }
 
-#TODO: Doc
-
 =head2 create_column_family
 
 Usage C<< create_column_family($keyspace, $column_family[, $is_super][, $comment]) >>
@@ -841,9 +834,14 @@ Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassand
 
 =head1 TODO
 
-B<SuperColumn Support>
-
 B<Unit Tests>
+
+=over 2
+
+Sort of done in the examples folder
+L<https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples>
+
+=back
 
 B<Methods>
 
@@ -882,10 +880,6 @@ string describe_snitch()
 describe_version
 	
 string describe_version()
-	
-system_add_column_family
-	
-string system_add_column_family(CFDef cf_def)
 	
 system_drop_column_family
 	

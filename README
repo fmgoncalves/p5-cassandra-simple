@@ -46,7 +46,7 @@ SYNOPSYS
     $opt is a *HASH* and can have the following keys:
 
       columns, column_start, column_finish, column_count, column_reversed,
-      consistency_level_read
+      super_column, consistency_level_read
 
     Returns an HASH of the form "{ column => value, column => value }"
 
@@ -65,7 +65,8 @@ SYNOPSYS
 
     $opt is a *HASH* and can have the following keys:
 
-      columns, column_start, column_finish, consistency_level_read
+      columns, column_start, column_finish, super_column,
+      consistency_level_read
 
     Returns the count as an int
 
@@ -84,7 +85,7 @@ SYNOPSYS
     $opt is a *HASH* and can have the following keys:
 
       start, finish, columns, column_start, column_finish, column_reversed,
-      column_count, row_count, consistency_level_read
+      column_count, row_count, super_column, consistency_level_read
 
     Returns an *HASH* of the form "{ key => { column => value, column =>
     value }, key => { column => value, column => value } }"
@@ -110,8 +111,17 @@ SYNOPSYS
   insert
     Usage: "insert($column_family, $key, $columns[, opt])"
 
-    The *expression_list* is an *ARRAYREF* of the form "[ [ column => value
-    ] ]"
+    The $columns is an *ARRAYREF* of the form "[ [ column => value ] ]"
+
+    $opt is an *HASH* and can have the following keys:
+
+      timestamp, ttl, consistency_level_write
+
+  insert_super
+    Usage: "insert($column_family, $key, $columns[, opt])"
+
+    The $columns is an *HASH* of the form "{ super_column => { column =>
+    value, column => value } }"
 
     $opt is an *HASH* and can have the following keys:
 
@@ -159,9 +169,11 @@ BUGS
     <https://github.com/fmgoncalves/p5-cassandra-simple>.
 
 TODO
-    SuperColumn Support
-
     Unit Tests
+
+      Sort of done in the examples folder
+      <https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/exampl
+      es>
 
     Methods
 
@@ -199,10 +211,6 @@ TODO
       describe_version
 
       string describe_version()
-
-      system_add_column_family
-
-      string system_add_column_family(CFDef cf_def)
 
       system_drop_column_family
 
