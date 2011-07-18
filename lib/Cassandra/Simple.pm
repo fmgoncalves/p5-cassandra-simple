@@ -150,6 +150,27 @@ sub _trigger_keyspace {
 	$self->client->set_keyspace($keyspace);
 }
 
+sub _column_or_supercolumn_to_hash {
+	my $self = shift;
+
+	my $c_or_sc = shift;
+
+	my @result;
+	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
+		@result = ( $_->{column}->{name}, $_->{column}->{value} );
+	} elsif ( exists $c_or_sc->{super_column} ) {
+		@result = (
+					$c_or_sc->{super_column}->{name},
+					{
+					   map { $_->{name} => $_->{value} }
+						 @{ $c_or_sc->{super_column}->{columns} }
+					}
+		);
+	}
+	return \@result;
+
+}
+
 #### API methods ####
 
 =head2 get
@@ -160,7 +181,7 @@ C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
 
-columns, column_start, column_finish, column_count, column_reversed, consistency_level_read
+columns, column_start, column_finish, column_count, column_reversed, super_column, consistency_level_read
 
 =back
 
@@ -176,8 +197,12 @@ sub get {
 	my $opt           = shift // {};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
-
+	  Cassandra::ColumnParent->new(
+							   {
+								 column_family => $column_family,
+								 super_column  => $opt->{super_column} // undef,
+							   }
+	  );
 	my $predicate = Cassandra::SlicePredicate->new;
 
 	#Cases
@@ -200,9 +225,11 @@ sub get {
 	my $result =
 	  $self->client->get_slice( $key, $columnParent, $predicate, $level );
 
-	my %result_columns = map {
-		$_->{column}->{name} => $_->{column}->{value} 
-	} @{$result};
+	my %result_columns =
+	  map {
+		my $a = $self->_column_or_supercolumn_to_hash($_);
+		$a->[0] => $a->[1]
+	  } @{$result};
 
 	return %result_columns;
 }
@@ -266,7 +293,7 @@ C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
 
-columns, column_start, column_finish, consistency_level_read
+columns, column_start, column_finish, super_column, consistency_level_read
 
 =back
 
@@ -283,7 +310,12 @@ sub get_count {
 	my $opt           = shift // {};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new(
+							   {
+								 column_family => $column_family,
+								 super_column  => $opt->{super_column} // undef,
+							   }
+	  );
 
 	my $predicate = Cassandra::SlicePredicate->new;
 
@@ -358,7 +390,7 @@ C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
 
-start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, consistency_level_read
+start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, super_column, consistency_level_read
 
 =back
 	
@@ -372,7 +404,12 @@ sub get_range {
 	my $column_family = shift;
 	my $opt           = shift;
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new(
+							   {
+								 column_family => $column_family,
+								 super_column  => $opt->{super_column} // undef,
+							   }
+	  );
 
 	my $predicate = Cassandra::SlicePredicate->new;
 
@@ -407,9 +444,7 @@ sub get_range {
 									   $keyRange,     $level );
 
 	my %result_columns = map {
-			$_->{key} => {map { $_->{column}->{name} => $_->{column}->{value} }
-			  @{ $_->{columns} } }
-		
+		$_->{key} => [ map { $self->_column_or_supercolumn_to_hash($_) } @{$_->{columns} } ]
 	} @{$result};
 
 	return %result_columns;
@@ -508,7 +543,7 @@ sub get_indexed_slices {
 
 Usage: C<< insert($column_family, $key, $columns[, opt]) >>
 	
-The I<expression_list> is an I<ARRAYREF> of the form C<< [ [ column => value ] ] >>
+The C<$columns> is an I<ARRAYREF> of the form C<< [ [ column => value ] ] >>
 	
 C<$opt> is an I<HASH> and can have the following keys:
 
@@ -545,6 +580,7 @@ sub insert {
 										name      => $_->[0],
 										value     => $_->[1],
 										timestamp => $opt->{timestamp} // time,
+										ttl       => $opt->{ttl} // undef,
 									  }
 								   )
 							   }
@@ -552,6 +588,70 @@ sub insert {
 						}
 		  )
 	} @{$columns};
+
+	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
+								 $level );
+}
+
+=head2 insert_super
+
+Usage: C<< insert($column_family, $key, $columns[, opt]) >>
+	
+The C<$columns> is an I<HASH> of the form C<< { super_column => { column => value, column => value } } >>
+	
+C<$opt> is an I<HASH> and can have the following keys:
+
+=over 2
+
+timestamp, ttl, consistency_level_write
+
+=back
+
+=cut
+
+sub insert_super {
+	my $self = shift;
+
+	my $column_family = shift;
+	my $key           = shift;
+	my $columns       = shift;
+	my $opt           = shift // {};
+
+	my $columnParent =
+	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	my $level = $self->_consistency_level_write($opt);
+
+	#TODO: ttl in column
+	my @mutations = map {
+		my $arg = $_;
+		new Cassandra::Mutation(
+			{
+			   column_or_supercolumn => Cassandra::ColumnOrSuperColumn->new(
+				   {
+					  super_column => Cassandra::SuperColumn->new(
+						  {
+							 name    => $_,
+							 columns => [
+								 map {
+									 new Cassandra::Column(
+											 {
+											   name  => $_,
+											   value => $columns->{$arg}->{$_},
+											   timestamp => $opt->{timestamp}
+												 // time,
+											   ttl => $opt->{ttl} // undef,
+											 }
+									   )
+								   } keys %{ $columns->{$arg} }
+							 ],
+
+						  }
+					  )
+				   }
+			   )
+			}
+		  )
+	} keys %$columns;
 
 	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
 								 $level );
@@ -600,6 +700,7 @@ sub batch_insert {
 										 name      => $_->[0],
 										 value     => $_->[1],
 										 timestamp => $opt->{timestamp} // time,
+										 ttl       => $opt->{ttl} // undef,
 									  }
 									)
 							   }
@@ -660,19 +761,20 @@ sub remove {
 
 		my %mutation_map = map {
 			$_ => {
-					$column_family => [
-										new Cassandra::Mutation(
-											  {
-												deletion =>
-												  Cassandra::Deletion->new(
-													 {
-													   timestamp => $timestamp,
-													   predicate => $predicate
-													 }
-												  )
-											  }
-										)
-					]
+				$column_family => [
+					new Cassandra::Mutation(
+						{
+						   deletion =>
+							 Cassandra::Deletion->new(
+							   {
+								  timestamp    => $timestamp,
+								  super_column => $opt->{super_column} // undef,
+								  predicate    => $predicate,
+							   }
+							 )
+						}
+					)
+				]
 			  }
 		} @{$keys};
 
@@ -691,14 +793,16 @@ Usage: C<< list_keyspace_cfs($keyspace) >>
 Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super> 
 
 =cut
+
 sub list_keyspace_cfs {
-	my ($self, $keyspace) = @_;
+	my ( $self, $keyspace ) = @_;
 	my $result = $self->client->describe_keyspace($keyspace);
 
 	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
 }
 
 #TODO: Doc
+
 =head2 create_column_family
 
 Usage C<< create_column_family($keyspace, $column_family[, $is_super][, $comment]) >>
@@ -707,23 +811,23 @@ C<$is_super> is a boolean indicating if this is a Standard or Super Column Famil
 
 =cut
 
-sub create_column_family{
+sub create_column_family {
 	my $self = shift;
-	
-	my $keyspace = shift;
-	my $column_family= shift;
-	my $is_super = shift // 0;
-	my $comment = shift // 0;
-	
+
+	my $keyspace      = shift;
+	my $column_family = shift;
+	my $is_super      = shift // 0;
+	my $comment       = shift // 0;
+
 	my $cfdef = Cassandra::CfDef->new();
-	
-	$cfdef->{name} = $column_family;
-	$cfdef->{keyspace} = $keyspace;
-	$cfdef->{comment} = $comment;
+
+	$cfdef->{name}        = $column_family;
+	$cfdef->{keyspace}    = $keyspace;
+	$cfdef->{comment}     = $comment;
 	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
-	
+
 	print Dumper $cfdef;
-	
+
 	$self->client->system_add_column_family($cfdef);
 }
 
