@@ -80,7 +80,8 @@ use Thrift;
 use Thrift::BinaryProtocol;
 use Thrift::FramedTransport;
 use Thrift::Socket;
-
+use strict;
+use warnings;
 ### Thrift Protocol/Client methods ###
 
 sub _build_client {
@@ -442,8 +443,13 @@ sub get_range {
 									   $keyRange,     $level );
 
 	my %result_columns = map {
-		$_->{key} => [ map { $self->_column_or_supercolumn_to_hash($_) }
-					   @{ $_->{columns} } ]
+		$_->{key} => {
+			map {
+				my $a = $self->_column_or_supercolumn_to_hash($_);
+				$a->[0] => $a->[1]
+			  }
+			  @{ $_->{columns} }
+		  }
 	} @{$result};
 
 	return \%result_columns;
@@ -824,45 +830,53 @@ sub create_column_family {
 	$self->client->system_add_column_family($cfdef);
 }
 
-
 =head2 create_index
 
 Usage: C<< create_index($keyspace, $column_family, $column, [$validation_class]) >>
 
 Creates an index on C<$column> of C<$column_family>.
 
-$validation_class only applies when $column doesn't yet exist, and even then it is optional (defaults to BytesType).
+C<$validation_class> only applies when C<$column> doesn't yet exist, and even then it is optional (defaults to I<BytesType>).
 
 =cut
-sub create_index{
+
+sub create_index {
 	my $self = shift;
 
 	my $keyspace      = shift;
 	my $column_family = shift;
-	my $column = shift;
-	
-	#TODO: get column family definition, substitute the target column with itself but indexed.
-	
-	my $cfdef = [grep {$_->{name} eq $column_family } @{ $self->client->describe_keyspace($keyspace)->{cf_defs} }]->[0];
-	
+	my $column        = shift;
+
+#TODO: get column family definition, substitute the target column with itself but indexed.
+
+	my $cfdef =
+	  [ grep { $_->{name} eq $column_family }
+		@{ $self->client->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
+
 	my $cdef;
-	if(@{ $cfdef->{column_metadata} } and grep {$_->{name} eq $column } @{ $cfdef->{column_metadata} }){
-		$cdef = [grep {$_->{name} eq $column } @{ $cfdef->{column_metadata} }]->[0];
-	}else{
-		$cdef = new Cassandra::ColumnDef({
-			name => $column,
-			validation_class => 'org.apache.cassandra.db.marshal.BytesType',
-		});
+	if ( @{ $cfdef->{column_metadata} }
+		 and grep { $_->{name} eq $column } @{ $cfdef->{column_metadata} } )
+	{
+		$cdef =
+		  [ grep { $_->{name} eq $column } @{ $cfdef->{column_metadata} } ]
+		  ->[0];
+	} else {
+		$cdef = new Cassandra::ColumnDef(
+			 {
+			   name             => $column,
+			   validation_class => 'org.apache.cassandra.db.marshal.BytesType',
+			 }
+		);
 	}
 	$cdef->{index_type} = 0;
 	$cdef->{index_name} = $column . "_idx";
-	
-	
-	$cfdef->{column_metadata} = [grep {$_->{name} ne $column } @{ $cfdef->{column_metadata} }];
+
+	$cfdef->{column_metadata} =
+	  [ grep { $_->{name} ne $column } @{ $cfdef->{column_metadata} } ];
 	push @{ $cfdef->{column_metadata} }, $cdef;
-	
+
 	print Dumper $cfdef;
-	
+
 	$self->client->system_update_column_family($cfdef);
 }
 
@@ -884,6 +898,11 @@ Sort of done in the examples folder
 L<https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples>
 
 =back
+
+B<Tombstones>
+
+get, get_range and get_indexed_slices should probably filter out tombstones, even if it means returning less than the requested count.
+Ideally it would retry until it got enough results.
 
 B<Methods>
 

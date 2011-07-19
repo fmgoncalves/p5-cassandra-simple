@@ -6263,7 +6263,7 @@ sub recv_login{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_login_result();
   $result->read($self->{input});
@@ -6309,14 +6309,14 @@ sub recv_set_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_set_keyspace_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   return;
 }
@@ -6358,7 +6358,7 @@ sub recv_get{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_get_result();
   $result->read($self->{input});
@@ -6368,7 +6368,7 @@ sub recv_get{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{nfe}) {
     die $result->{nfe}->getName();
@@ -6422,7 +6422,7 @@ sub recv_get_slice{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_get_slice_result();
   $result->read($self->{input});
@@ -6432,7 +6432,7 @@ sub recv_get_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6483,7 +6483,7 @@ sub recv_get_count{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_get_count_result();
   $result->read($self->{input});
@@ -6493,7 +6493,7 @@ sub recv_get_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6544,7 +6544,7 @@ sub recv_multiget_slice{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_multiget_slice_result();
   $result->read($self->{input});
@@ -6554,7 +6554,7 @@ sub recv_multiget_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6605,7 +6605,7 @@ sub recv_multiget_count{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_multiget_count_result();
   $result->read($self->{input});
@@ -6615,7 +6615,7 @@ sub recv_multiget_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6666,7 +6666,7 @@ sub recv_get_range_slices{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_get_range_slices_result();
   $result->read($self->{input});
@@ -6676,7 +6676,7 @@ sub recv_get_range_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6727,7 +6727,7 @@ sub recv_get_indexed_slices{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_get_indexed_slices_result();
   $result->read($self->{input});
@@ -6737,7 +6737,7 @@ sub recv_get_indexed_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6788,14 +6788,14 @@ sub recv_insert{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_insert_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6846,14 +6846,14 @@ sub recv_add{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_add_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6904,14 +6904,14 @@ sub recv_remove{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_remove_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6959,14 +6959,14 @@ sub recv_remove_counter{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_remove_counter_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7011,14 +7011,14 @@ sub recv_batch_mutate{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_batch_mutate_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7060,14 +7060,14 @@ sub recv_truncate{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_truncate_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7103,7 +7103,7 @@ sub recv_describe_schema_versions{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_schema_versions_result();
   $result->read($self->{input});
@@ -7113,7 +7113,7 @@ sub recv_describe_schema_versions{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   die "describe_schema_versions failed: unknown result";
 }
@@ -7146,7 +7146,7 @@ sub recv_describe_keyspaces{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_keyspaces_result();
   $result->read($self->{input});
@@ -7156,7 +7156,7 @@ sub recv_describe_keyspaces{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   die "describe_keyspaces failed: unknown result";
 }
@@ -7189,7 +7189,7 @@ sub recv_describe_cluster_name{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_cluster_name_result();
   $result->read($self->{input});
@@ -7229,7 +7229,7 @@ sub recv_describe_version{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_version_result();
   $result->read($self->{input});
@@ -7272,7 +7272,7 @@ sub recv_describe_ring{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_ring_result();
   $result->read($self->{input});
@@ -7282,7 +7282,7 @@ sub recv_describe_ring{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   die "describe_ring failed: unknown result";
 }
@@ -7315,7 +7315,7 @@ sub recv_describe_partitioner{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_partitioner_result();
   $result->read($self->{input});
@@ -7355,7 +7355,7 @@ sub recv_describe_snitch{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_snitch_result();
   $result->read($self->{input});
@@ -7398,7 +7398,7 @@ sub recv_describe_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_keyspace_result();
   $result->read($self->{input});
@@ -7411,7 +7411,7 @@ sub recv_describe_keyspace{
     die $result->{nfe}->getName();
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   die "describe_keyspace failed: unknown result";
 }
@@ -7456,7 +7456,7 @@ sub recv_describe_splits{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_describe_splits_result();
   $result->read($self->{input});
@@ -7466,7 +7466,7 @@ sub recv_describe_splits{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   die "describe_splits failed: unknown result";
 }
@@ -7502,7 +7502,7 @@ sub recv_system_add_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_add_column_family_result();
   $result->read($self->{input});
@@ -7512,7 +7512,7 @@ sub recv_system_add_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7551,7 +7551,7 @@ sub recv_system_drop_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_drop_column_family_result();
   $result->read($self->{input});
@@ -7561,7 +7561,7 @@ sub recv_system_drop_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7600,7 +7600,7 @@ sub recv_system_add_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_add_keyspace_result();
   $result->read($self->{input});
@@ -7610,7 +7610,7 @@ sub recv_system_add_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7649,7 +7649,7 @@ sub recv_system_drop_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_drop_keyspace_result();
   $result->read($self->{input});
@@ -7659,7 +7659,7 @@ sub recv_system_drop_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7698,7 +7698,7 @@ sub recv_system_update_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_update_keyspace_result();
   $result->read($self->{input});
@@ -7708,7 +7708,7 @@ sub recv_system_update_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7747,7 +7747,7 @@ sub recv_system_update_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_system_update_column_family_result();
   $result->read($self->{input});
@@ -7757,7 +7757,7 @@ sub recv_system_update_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7799,7 +7799,7 @@ sub recv_execute_cql_query{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x->getMessage()->getMessage();
   }
   my $result = new Cassandra::Cassandra_execute_cql_query_result();
   $result->read($self->{input});
@@ -7809,7 +7809,7 @@ sub recv_execute_cql_query{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire}->why->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
