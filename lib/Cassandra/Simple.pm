@@ -818,7 +818,7 @@ sub create_column_family {
 	my $keyspace      = shift;
 	my $column_family = shift;
 	my $is_super      = shift // 0;
-	my $comment       = shift // 0;
+	my $comment       = shift // undef;
 
 	my $cfdef = Cassandra::CfDef->new();
 
