@@ -447,8 +447,7 @@ sub get_range {
 			map {
 				my $a = $self->_column_or_supercolumn_to_hash($_);
 				$a->[0] => $a->[1]
-			  }
-			  @{ $_->{columns} }
+			  } @{ $_->{columns} }
 		  }
 	} @{$result};
 
@@ -722,7 +721,7 @@ sub batch_insert {
 
 Usage: C<< remove($column_family[, $keys][, opt]) >>
 	
-C<$keys> is key or an I<ARRAY> of keys to be deleted.
+C<$keys> is a key or an I<ARRAY> of keys to be deleted.
 
 A removal whitout keys truncates the whole column_family.
 	
@@ -745,42 +744,40 @@ sub remove {
 	my $keys          = shift;
 	my $opt           = shift // {};
 
-	$keys = [$keys] unless ref($keys) eq 'ARRAY';
-
 	my $timestamp = time;
 	my $level     = $self->_consistency_level_write($opt);
 
 	if ($keys) {
 
-		my $predicate = Cassandra::SlicePredicate->new;
+		$keys = [$keys] unless ref($keys) eq 'ARRAY';
+
+		my $deletion =
+		  Cassandra::Deletion->new(
+							   {
+								 timestamp    => $timestamp,
+								 super_column => $opt->{super_column} // undef,
+							   }
+		  );
+
 		if ( exists $opt->{columns} ) {
-			$predicate->{column_names} = $opt->{columns};
-		} else {
-			my $sliceRange = Cassandra::SliceRange->new($opt);
-			$sliceRange->{start}    = $opt->{column_start}    // '';
-			$sliceRange->{finish}   = $opt->{column_finish}   // '';
-			$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-			$sliceRange->{count}    = $opt->{column_count}    // 100;
-			$predicate->{slice_range} = $sliceRange;
+			$deletion->{predicate} = Cassandra::SlicePredicate->new(
+										  { column_names => $opt->{columns} } );
 		}
 
+		#		else {#Unsupported by Cassandra yet
+		#			my $predicate = Cassandra::SlicePredicate->new;
+		#			my $sliceRange = Cassandra::SliceRange->new($opt);
+		#			$sliceRange->{start}    = $opt->{column_start}    // '';
+		#			$sliceRange->{finish}   = $opt->{column_finish}   // '';
+		#			$sliceRange->{reversed} = $opt->{column_reversed} // 0;
+		#			$sliceRange->{count}    = $opt->{column_count}    // 100;
+		#			$predicate->{slice_range} = $sliceRange;
+		#			$deletion->{predicate} = $predicate;
+		#		}
+
 		my %mutation_map = map {
-			$_ => {
-				$column_family => [
-					new Cassandra::Mutation(
-						{
-						   deletion =>
-							 Cassandra::Deletion->new(
-							   {
-								  timestamp    => $timestamp,
-								  super_column => $opt->{super_column} // undef,
-								  predicate    => $predicate,
-							   }
-							 )
-						}
-					)
-				]
-			  }
+			$_ => { $column_family =>
+					[ new Cassandra::Mutation( { deletion => $deletion, } ) ] }
 		} @{$keys};
 
 		$self->client->batch_mutate( \%mutation_map, $level );

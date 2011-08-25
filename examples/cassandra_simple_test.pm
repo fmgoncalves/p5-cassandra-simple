@@ -81,6 +81,12 @@ println "\$conn->get_count($column_family, 'whisky2')";
 println Dumper $conn->get_count($column_family, 'whisky2');
 #Expected result: 1
 
+println "\$conn->remove($column_family, 'whisky2')";
+println Dumper $conn->remove($column_family, 'whisky2');
+
+println "\$conn->get($column_family, 'whisky2')";
+println Dumper $conn->get($column_family, 'whisky2');
+
 println "\$conn->remove($column_family)";
 println Dumper $conn->remove($column_family);
 

@@ -141,7 +141,7 @@ SYNOPSYS
   remove
     Usage: "remove($column_family[, $keys][, opt])"
 
-    $keys is an *ARRAY* of keys to be deleted.
+    $keys is key or an *ARRAY* of keys to be deleted.
 
     A removal whitout keys truncates the whole column_family.
 
