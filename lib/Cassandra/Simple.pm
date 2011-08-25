@@ -722,7 +722,7 @@ sub batch_insert {
 
 Usage: C<< remove($column_family[, $keys][, opt]) >>
 	
-C<$keys> is an I<ARRAY> of keys to be deleted.
+C<$keys> is key or an I<ARRAY> of keys to be deleted.
 
 A removal whitout keys truncates the whole column_family.
 	
@@ -744,6 +744,8 @@ sub remove {
 	my $column_family = shift;
 	my $keys          = shift;
 	my $opt           = shift // {};
+
+	$keys = [$keys] unless ref($keys) eq 'ARRAY';
 
 	my $timestamp = time;
 	my $level     = $self->_consistency_level_write($opt);
@@ -847,7 +849,7 @@ sub create_index {
 	my $column_family = shift;
 	my $column        = shift;
 
-#TODO: get column family definition, substitute the target column with itself but indexed.
+#get column family definition, substitute the target column with itself but indexed.
 
 	my $cfdef =
 	  [ grep { $_->{name} eq $column_family }
@@ -875,7 +877,7 @@ sub create_index {
 	  [ grep { $_->{name} ne $column } @{ $cfdef->{column_metadata} } ];
 	push @{ $cfdef->{column_metadata} }, $cdef;
 
-	print Dumper $cfdef;
+	#print Dumper $cfdef;
 
 	$self->client->system_update_column_family($cfdef);
 }

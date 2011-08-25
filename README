@@ -171,7 +171,7 @@ SYNOPSYS
     Creates an index on $column of $column_family.
 
     $validation_class only applies when $column doesn't yet exist, and even
-    then it is optional (defaults to BytesType).
+    then it is optional (defaults to *BytesType*).
 
 BUGS
     Bugs should be reported on github at
@@ -183,6 +183,12 @@ TODO
       Sort of done in the examples folder
       <https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/exampl
       es>
+
+    Tombstones
+
+    get, get_range and get_indexed_slices should probably filter out
+    tombstones, even if it means returning less than the requested count.
+    Ideally it would retry until it got enough results.
 
     Methods
 
