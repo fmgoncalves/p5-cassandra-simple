@@ -6316,7 +6316,7 @@ sub recv_set_keyspace{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   return;
 }
@@ -6368,7 +6368,7 @@ sub recv_get{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{nfe}) {
     die $result->{nfe}->getName();
@@ -6432,7 +6432,7 @@ sub recv_get_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6493,7 +6493,7 @@ sub recv_get_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6554,7 +6554,7 @@ sub recv_multiget_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6615,7 +6615,7 @@ sub recv_multiget_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6676,7 +6676,7 @@ sub recv_get_range_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6737,7 +6737,7 @@ sub recv_get_indexed_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6795,7 +6795,7 @@ sub recv_insert{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6853,7 +6853,7 @@ sub recv_add{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6911,7 +6911,7 @@ sub recv_remove{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -6966,7 +6966,7 @@ sub recv_remove_counter{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7018,7 +7018,7 @@ sub recv_batch_mutate{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7067,7 +7067,7 @@ sub recv_truncate{
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();
@@ -7113,7 +7113,7 @@ sub recv_describe_schema_versions{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   die "describe_schema_versions failed: unknown result";
 }
@@ -7156,7 +7156,7 @@ sub recv_describe_keyspaces{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   die "describe_keyspaces failed: unknown result";
 }
@@ -7282,7 +7282,7 @@ sub recv_describe_ring{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   die "describe_ring failed: unknown result";
 }
@@ -7411,7 +7411,7 @@ sub recv_describe_keyspace{
     die $result->{nfe}->getName();
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   die "describe_keyspace failed: unknown result";
 }
@@ -7466,7 +7466,7 @@ sub recv_describe_splits{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   die "describe_splits failed: unknown result";
 }
@@ -7512,7 +7512,7 @@ sub recv_system_add_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7561,7 +7561,7 @@ sub recv_system_drop_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7610,7 +7610,7 @@ sub recv_system_add_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7659,7 +7659,7 @@ sub recv_system_drop_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7708,7 +7708,7 @@ sub recv_system_update_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7757,7 +7757,7 @@ sub recv_system_update_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{sde}) {
     die $result->{sde}->getName();
@@ -7809,7 +7809,7 @@ sub recv_execute_cql_query{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why->why;
+    die $result->{ire}->why;
   }
   if (defined $result->{ue}) {
     die $result->{ue}->getName();

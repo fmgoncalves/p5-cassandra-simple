@@ -4,6 +4,7 @@ use warnings;
 use Data::Dumper;
 
 use Cassandra::Simple;
+use Cassandra::Pool;
 
 sub println {
 	print @_, "\n";
@@ -93,3 +94,16 @@ println Dumper $conn->remove($column_family);
 println "\$conn->get_range($column_family)";
 println Dumper $conn->get_range($column_family);
 #Expected result: empty list
+
+println "\$conn->ring('simple')";
+println Dumper $conn->ring('simple');
+
+
+my $pool = new Cassandra::Pool($keyspace);
+
+my $client = $pool->get();
+
+println "\$client->describe_snitch()";
+println $client->describe_snitch();
+
+

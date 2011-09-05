@@ -58,59 +58,37 @@ use warnings;
 use Data::Dumper;
 
 use Any::Moose;
-has 'client' =>
-  ( is => 'rw', isa => 'Cassandra::CassandraClient', lazy_build => 1 );
+has 'pool' => ( is => 'rw', isa => 'Cassandra::Pool', lazy_build => 1 );
 has 'consistency_level_read'  => ( is => 'rw', isa => 'Str', default => 'ONE' );
 has 'consistency_level_write' => ( is => 'rw', isa => 'Str', default => 'ONE' );
-has 'keyspace' => ( is => 'rw', isa => 'Str', trigger => \&_trigger_keyspace );
-has 'password' => ( is => 'rw', isa => 'Str', default => '' );
-has 'protocol' =>
-  ( is => 'rw', isa => 'Thrift::BinaryProtocol', lazy_build => 1 );
+has 'keyspace'    => ( is => 'rw', isa => 'Str' );
+has 'password'    => ( is => 'rw', isa => 'Str', default => '' );
 has 'server_name' => ( is => 'rw', isa => 'Str', default => '127.0.0.1' );
 has 'server_port' => ( is => 'rw', isa => 'Int', default => 9160 );
-has 'socket' => ( is => 'rw', isa => 'Thrift::Socket', lazy_build => 1 );
-has 'transport' =>
-  ( is => 'rw', isa => 'Thrift::FramedTransport', lazy_build => 1 );
+
 has 'username' => ( is => 'rw', isa => 'Str', default => '' );
 
 use 5.010;
 use Cassandra::Cassandra;
-use Cassandra::Types;
-use Thrift;
-use Thrift::BinaryProtocol;
-use Thrift::FramedTransport;
-use Thrift::Socket;
+use Cassandra::Pool;
 use strict;
 use warnings;
 ### Thrift Protocol/Client methods ###
 
-sub _build_client {
+sub _build_pool {
 	my $self = shift;
-
-	my $client = Cassandra::CassandraClient->new( $self->protocol );
-	$self->transport->open;
-	$self->_login($client);
-
-	$client;
+	print "BBBBB\n";
+	return new Cassandra::Pool(
+						 $self->keyspace,
+						 {
+							server_name => $self->server_name,
+							server_port => $self->server_port,
+							username    => $self->username,
+							password    => $self->password
+						 }
+	);
 }
 
-sub _build_protocol {
-	my $self = shift;
-
-	Thrift::BinaryProtocol->new( $self->transport );
-}
-
-sub _build_socket {
-	my $self = shift;
-
-	Thrift::Socket->new( $self->server_name, $self->server_port );
-}
-
-sub _build_transport {
-	my $self = shift;
-
-	Thrift::FramedTransport->new( $self->socket, 1024, 1024 );
-}
 
 sub _consistency_level_read {
 	my $self = shift;
@@ -131,22 +109,6 @@ sub _consistency_level_write {
 
 	eval "\$level = Cassandra::ConsistencyLevel::$level;";
 	$level;
-}
-
-sub _login {
-	my $self   = shift;
-	my $client = shift;
-
-	my $auth = Cassandra::AuthenticationRequest->new;
-	$auth->{credentials} =
-	  { username => $self->username, password => $self->password };
-	$client->login($auth);
-}
-
-sub _trigger_keyspace {
-	my ( $self, $keyspace ) = @_;
-
-	$self->client->set_keyspace($keyspace);
 }
 
 sub _column_or_supercolumn_to_hash {
@@ -222,7 +184,7 @@ sub get {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $result =
-	  $self->client->get_slice( $key, $columnParent, $predicate, $level );
+	  $self->pool->get()->get_slice( $key, $columnParent, $predicate, $level );
 
 	my %result_columns =
 	  map {
@@ -274,7 +236,7 @@ sub multiget {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $result =
-	  $self->client->multiget_slice( $keys, $columnParent, $predicate, $level );
+	  $self->pool->get()->multiget_slice( $keys, $columnParent, $predicate, $level );
 
 	my %result_columns = map {
 		$_ => { map { $_->{column}->{name} => $_->{column}->{value} }
@@ -334,7 +296,7 @@ sub get_count {
 	}
 	my $level = $self->_consistency_level_read($opt);
 
-	return $self->client->get_count( $key, $columnParent, $predicate, $level );
+	return $self->pool->get()->get_count( $key, $columnParent, $predicate, $level );
 }
 
 =head2 multiget_count
@@ -377,7 +339,7 @@ sub multiget_count {
 	}
 	my $level = $self->_consistency_level_read($opt);
 
-	return $self->client->multiget_count( $keys, $columnParent, $predicate,
+	return $self->pool->get()->multiget_count( $keys, $columnParent, $predicate,
 										  $level );
 }
 
@@ -439,7 +401,7 @@ sub get_range {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $result =
-	  $self->client->get_range_slices( $columnParent, $predicate,
+	  $self->pool->get()->get_range_slices( $columnParent, $predicate,
 									   $keyRange,     $level );
 
 	my %result_columns = map {
@@ -532,7 +494,7 @@ sub get_indexed_slices {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $result =
-	  $self->client->get_indexed_slices( $columnParent, $index_clause_thrift,
+	  $self->pool->get()->get_indexed_slices( $columnParent, $index_clause_thrift,
 										 $predicate, $level );
 
 	my %result_keys = map {
@@ -592,7 +554,7 @@ sub insert {
 		  )
 	} keys %$columns;
 
-	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
+	$self->pool->get()->batch_mutate( { $key => { $column_family => \@mutations } },
 								 $level );
 }
 
@@ -655,7 +617,7 @@ sub insert_super {
 		  )
 	} keys %$columns;
 
-	$self->client->batch_mutate( { $key => { $column_family => \@mutations } },
+	$self->pool->get()->batch_mutate( { $key => { $column_family => \@mutations } },
 								 $level );
 }
 
@@ -714,7 +676,7 @@ sub batch_insert {
 		  }
 	} keys %$rows;
 
-	$self->client->batch_mutate( \%mutation_map, $level );
+	$self->pool->get()->batch_mutate( \%mutation_map, $level );
 }
 
 =head2 remove
@@ -780,11 +742,11 @@ sub remove {
 					[ new Cassandra::Mutation( { deletion => $deletion, } ) ] }
 		} @{$keys};
 
-		$self->client->batch_mutate( \%mutation_map, $level );
+		$self->pool->get()->batch_mutate( \%mutation_map, $level );
 
 		return $timestamp;
 	} else {
-		$self->client->truncate($column_family);
+		$self->pool->get()->truncate($column_family);
 	}
 }
 
@@ -798,7 +760,7 @@ Returns an HASH of C<< { column_family_name => column_family_type } >> where col
 
 sub list_keyspace_cfs {
 	my ( $self, $keyspace ) = @_;
-	my $result = $self->client->describe_keyspace($keyspace);
+	my $result = $self->pool->get()->describe_keyspace($keyspace);
 
 	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
 }
@@ -826,7 +788,7 @@ sub create_column_family {
 	$cfdef->{comment}     = $comment;
 	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
 
-	$self->client->system_add_column_family($cfdef);
+	$self->pool->get()->system_add_column_family($cfdef);
 }
 
 =head2 create_index
@@ -850,7 +812,7 @@ sub create_index {
 
 	my $cfdef =
 	  [ grep { $_->{name} eq $column_family }
-		@{ $self->client->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
+		@{ $self->pool->get()->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
 
 	my $cdef;
 	if ( @{ $cfdef->{column_metadata} }
@@ -876,7 +838,24 @@ sub create_index {
 
 	#print Dumper $cfdef;
 
-	$self->client->system_update_column_family($cfdef);
+	$self->pool->get()->system_update_column_family($cfdef);
+}
+
+=head2 ring
+
+Usage: C<< ring($keyspace) >>
+
+Lists the addresses of all nodes on the cluster associated with the keyspace C<<$keyspace>>.
+
+=cut
+sub ring {
+
+	my $self = shift;
+
+	my $keyspace = shift;
+
+	return
+	  map { $_->{endpoints}->[0] } @{ $self->pool->get()->describe_ring($keyspace) };
 }
 
 =head1 BUGS
@@ -928,10 +907,6 @@ list<KsDef> describe_keyspaces()
 describe_partitioner
 	
 string describe_partitioner()
-	
-describe_ring
-	
-list<TokenRange> describe_ring(keyspace)
 	
 describe_snitch
 	
