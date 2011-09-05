@@ -77,7 +77,7 @@ use warnings;
 
 sub _build_pool {
 	my $self = shift;
-	print "BBBBB\n";
+	#print "BBBBB\n";
 	return new Cassandra::Pool(
 						 $self->keyspace,
 						 {

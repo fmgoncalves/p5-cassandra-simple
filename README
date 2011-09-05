@@ -173,6 +173,12 @@ SYNOPSYS
     $validation_class only applies when $column doesn't yet exist, and even
     then it is optional (defaults to *BytesType*).
 
+  ring
+    Usage: "ring($keyspace)"
+
+    Lists the addresses of all nodes on the cluster associated with the
+    keyspace "<$keyspace">.
+
 BUGS
     Bugs should be reported on github at
     <https://github.com/fmgoncalves/p5-cassandra-simple>.
@@ -214,10 +220,6 @@ TODO
       describe_partitioner
 
       string describe_partitioner()
-
-      describe_ring
-
-      list<TokenRange> describe_ring(keyspace)
 
       describe_snitch
 
