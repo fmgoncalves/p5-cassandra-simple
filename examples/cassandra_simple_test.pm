@@ -6,6 +6,8 @@ use Data::Dumper;
 use Cassandra::Simple;
 use Cassandra::Pool;
 
+use Sys::Hostname qw/hostname/;
+
 sub println {
 	print @_, "\n";
 }
@@ -13,6 +15,7 @@ sub println {
 my ($keyspace, $column_family) = qw/simple simple/;
 
 my $conn = Cassandra::Simple->new(
+	server_name => '127.0.0.1',
 	keyspace                => $keyspace,
 );
 
@@ -98,12 +101,16 @@ println Dumper $conn->get_range($column_family);
 println "\$conn->ring('simple')";
 println Dumper $conn->ring('simple');
 
-
+println "new Cassandra::Pool($keyspace)";
 my $pool = new Cassandra::Pool($keyspace);
 
+println "\$pool->get()";
 my $client = $pool->get();
 
 println "\$client->describe_snitch()";
 println $client->describe_snitch();
+println "\$client";
+println Dumper $client;
 
-
+println "\$pool->put(\$client)";
+$pool->put($client);

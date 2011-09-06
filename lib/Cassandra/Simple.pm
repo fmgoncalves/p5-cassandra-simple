@@ -22,30 +22,30 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 =head1 SYNOPSYS
 
 	my ($keyspace, $column_family) = qw/simple simple/;
-	
+
 	my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
-	
+
 	$conn->create_column_family( $keyspace, $column_family);
-	
+
 	$conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
-	
+
 	$conn->get($column_family, 'KeyA');
 	$conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
 	$conn->get($column_family, 'KeyA', { column_count => 1, column_reversed => 1 });
-	
+
 	$conn->batch_insert($column_family, { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
-	
+
 	$conn->multiget($column_family, [qw/KeyA KeyC/]);
-	
+
 	$conn->get_range($column_family, { start=> 'KeyA', finish => 'KeyB', column_count => 1 });
 	$conn->get_range($column_family);
-	
+
 	$conn->get_indexed_slices($column_family, { expression_list => [ [ 'ColumnA' => 'BA' ] ] });
-	
+
 	$conn->remove($column_family, [ 'KeyA' ], { columns => [ 'ColumnA' ]});
 	$conn->remove($column_family, [ 'KeyA' ]);
 	$conn->remove($column_family);
-	
+
 	$conn->get_count($column_family, 'KeyA');
 	$conn->multiget_count($column_family, [ 'KeyB', 'KeyC' ]);
 
@@ -77,18 +77,19 @@ use warnings;
 
 sub _build_pool {
 	my $self = shift;
-	#print "BBBBB\n";
-	return new Cassandra::Pool(
-						 $self->keyspace,
-						 {
-							server_name => $self->server_name,
-							server_port => $self->server_port,
-							username    => $self->username,
-							password    => $self->password
-						 }
-	);
-}
 
+	#print "BBBBB\n";
+	return
+	  new Cassandra::Pool(
+						   $self->keyspace,
+						   {
+							  server_name => $self->server_name,
+							  server_port => $self->server_port,
+							  username    => $self->username,
+							  password    => $self->password
+						   }
+	  );
+}
 
 sub _consistency_level_read {
 	my $self = shift;
@@ -137,7 +138,7 @@ sub _column_or_supercolumn_to_hash {
 =head2 get
 
 Usage: C<get($column_family, $key[, opt])>
-		
+
 C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
@@ -147,7 +148,7 @@ columns, column_start, column_finish, column_count, column_reversed, super_colum
 =back
 
 Returns an HASH of the form C<< { column => value, column => value } >>
-	
+
 =cut
 
 sub get {
@@ -182,9 +183,11 @@ sub get {
 		$predicate->{slice_range} = $sliceRange;
 	}
 	my $level = $self->_consistency_level_read($opt);
-
+	my $cl    = $self->pool->get();
 	my $result =
-	  $self->pool->get()->get_slice( $key, $columnParent, $predicate, $level );
+	  eval { $cl->get_slice( $key, $columnParent, $predicate, $level ) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
 	my %result_columns =
 	  map {
@@ -198,11 +201,11 @@ sub get {
 =head2 multiget
 
 Usage: C<< multiget($column_family, $keys[, opt]) >>
-	
+
 C<$keys> should be an I<ARRAYREF> of keys to fetch.
-	
+
 All parameters in C<$opt> are the same as in C<get()>
-	
+
 Returns an HASH of the form C<< { key => { column => value, column => value }, key => { column => value, column => value } } >>
 
 =cut
@@ -235,8 +238,11 @@ sub multiget {
 	}
 	my $level = $self->_consistency_level_read($opt);
 
+	my $cl = $self->pool->get();
 	my $result =
-	  $self->pool->get()->multiget_slice( $keys, $columnParent, $predicate, $level );
+	  eval { $cl->multiget_slice( $keys, $columnParent, $predicate, $level ) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
 	my %result_columns = map {
 		$_ => { map { $_->{column}->{name} => $_->{column}->{value} }
@@ -249,7 +255,7 @@ sub multiget {
 =head2 get_count
 
 Usage: C<< get_count($column_family, $key[, opt]) >>
-	
+
 C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
@@ -296,7 +302,13 @@ sub get_count {
 	}
 	my $level = $self->_consistency_level_read($opt);
 
-	return $self->pool->get()->get_count( $key, $columnParent, $predicate, $level );
+	my $cl = $self->pool->get();
+	my $result =
+	  eval { $cl->get_count( $key, $columnParent, $predicate, $level ) };
+
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
+	return $result;
 }
 
 =head2 multiget_count
@@ -304,9 +316,9 @@ sub get_count {
 Usage: C<< multiget_count($column_family, $keys[, opt]) >>
 
 C<$keys> should be an I<ARRAYREF> of keys.
-	
+
 All parameters in C<$opt> are the same as in C<get_count()>
-	
+
 Returns a mapping of C<< key -> count >>
 
 =cut
@@ -338,15 +350,19 @@ sub multiget_count {
 		$predicate->{slice_range} = $sliceRange;
 	}
 	my $level = $self->_consistency_level_read($opt);
+	my $cl    = $self->pool->get();
+	my $result =
+	  eval { $cl->multiget_count( $keys, $columnParent, $predicate, $level ) };
 
-	return $self->pool->get()->multiget_count( $keys, $columnParent, $predicate,
-										  $level );
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
+	return $result;
 }
 
 =head2 get_range
 
 Usage: C<get_range( $column_family[, opt])>
-	
+
 C<$opt> is a I<HASH> and can have the following keys:
 
 =over 2
@@ -354,7 +370,7 @@ C<$opt> is a I<HASH> and can have the following keys:
 start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, super_column, consistency_level_read
 
 =back
-	
+
 Returns an I<HASH> of the form C<< { key => { column => value, column => value }, key => { column => value, column => value } } >>
 
 =cut
@@ -398,11 +414,14 @@ sub get_range {
 								}
 	  );
 
-	my $level = $self->_consistency_level_read($opt);
+	my $level  = $self->_consistency_level_read($opt);
+	my $cl     = $self->pool->get();
+	my $result = eval {
+		$cl->get_range_slices( $columnParent, $predicate, $keyRange, $level );
+	};
 
-	my $result =
-	  $self->pool->get()->get_range_slices( $columnParent, $predicate,
-									   $keyRange,     $level );
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
 	my %result_columns = map {
 		$_->{key} => {
@@ -419,7 +438,7 @@ sub get_range {
 =head2 get_indexed_slices
 
 Usage: C<get_indexed_slices($column_family, $index_clause[, opt])>
-	
+
 C<$index_clause> is an I<HASH> containing the following keys:
 
 =over 2
@@ -428,7 +447,7 @@ expression_list, start_key, row_count
 
 The I<expression_list> is an I<ARRAYREF> of the form C<< [ [ column => value ] ] >>
 
-=back	
+=back
 
 C<$opt> is an I<HASH> and can have the following keys:
 
@@ -439,7 +458,7 @@ columns, column_start, column_finish, column_reversed, column_count, consistency
 =back
 
 Returns an I<HASH> of the form C<< { key => { column => value, column => value }, key => { column => value, column => value } } >>
-	
+
 =cut
 
 sub get_indexed_slices {
@@ -493,9 +512,13 @@ sub get_indexed_slices {
 
 	my $level = $self->_consistency_level_read($opt);
 
-	my $result =
-	  $self->pool->get()->get_indexed_slices( $columnParent, $index_clause_thrift,
-										 $predicate, $level );
+	my $cl     = $self->pool->get();
+	my $result = eval {
+		$cl->get_indexed_slices( $columnParent, $index_clause_thrift,
+								 $predicate, $level );
+	};
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
 	my %result_keys = map {
 		$_->{key} => { map { $_->{column}->{name} => $_->{column}->{value} }
@@ -508,9 +531,9 @@ sub get_indexed_slices {
 =head2 insert
 
 Usage: C<< insert($column_family, $key, $columns[, opt]) >>
-	
+
 The C<$columns> is an I<HASHREF> of the form C<< { column => value, column => value } >>
-	
+
 C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
@@ -554,16 +577,21 @@ sub insert {
 		  )
 	} keys %$columns;
 
-	$self->pool->get()->batch_mutate( { $key => { $column_family => \@mutations } },
-								 $level );
+	my $cl = $self->pool->get();
+	eval {
+		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
+						   $level );
+	};
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 }
 
 =head2 insert_super
 
 Usage: C<< insert_super($column_family, $key, $columns[, opt]) >>
-	
+
 The C<$columns> is an I<HASH> of the form C<< { super_column => { column => value, column => value } } >>
-	
+
 C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
@@ -617,8 +645,13 @@ sub insert_super {
 		  )
 	} keys %$columns;
 
-	$self->pool->get()->batch_mutate( { $key => { $column_family => \@mutations } },
-								 $level );
+	my $cl = $self->pool->get();
+	eval {
+		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
+						   $level );
+	};
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 }
 
 =head2 batch_insert
@@ -626,7 +659,7 @@ sub insert_super {
 Usage: C<batch_insert($column_family, $rows[, opt])>
 
 C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
-	
+
 C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
@@ -675,18 +708,20 @@ sub batch_insert {
 			]
 		  }
 	} keys %$rows;
-
-	$self->pool->get()->batch_mutate( \%mutation_map, $level );
+	my $cl = $self->pool->get();
+	eval { $cl->batch_mutate( \%mutation_map, $level ); };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 }
 
 =head2 remove
 
 Usage: C<< remove($column_family[, $keys][, opt]) >>
-	
+
 C<$keys> is a key or an I<ARRAY> of keys to be deleted.
 
 A removal whitout keys truncates the whole column_family.
-	
+
 C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
@@ -741,12 +776,17 @@ sub remove {
 			$_ => { $column_family =>
 					[ new Cassandra::Mutation( { deletion => $deletion, } ) ] }
 		} @{$keys};
-
-		$self->pool->get()->batch_mutate( \%mutation_map, $level );
+		my $cl = $self->pool->get();
+		eval { $cl->batch_mutate( \%mutation_map, $level ); };
+		if   ($@) { $self->pool->fail($cl) }
+		else      { $self->pool->put($cl) }
 
 		return $timestamp;
 	} else {
-		$self->pool->get()->truncate($column_family);
+		my $cl = $self->pool->get();
+		eval { $cl->truncate($column_family); };
+		if   ($@) { $self->pool->fail($cl) }
+		else      { $self->pool->put($cl) }
 	}
 }
 
@@ -754,13 +794,16 @@ sub remove {
 
 Usage: C<< list_keyspace_cfs($keyspace) >>
 
-Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super> 
+Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super>
 
 =cut
 
 sub list_keyspace_cfs {
 	my ( $self, $keyspace ) = @_;
-	my $result = $self->pool->get()->describe_keyspace($keyspace);
+	my $cl = $self->pool->get();
+	my $result = eval { $cl->describe_keyspace($keyspace) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
 	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
 }
@@ -788,7 +831,10 @@ sub create_column_family {
 	$cfdef->{comment}     = $comment;
 	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
 
-	$self->pool->get()->system_add_column_family($cfdef);
+	my $cl = $self->pool->get();
+	eval { $cl->system_add_column_family($cfdef); };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 }
 
 =head2 create_index
@@ -810,9 +856,16 @@ sub create_index {
 
 #get column family definition, substitute the target column with itself but indexed.
 
-	my $cfdef =
-	  [ grep { $_->{name} eq $column_family }
-		@{ $self->pool->get()->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
+	my $cl = $self->pool->get();
+
+	my $cfdef = eval {
+		[ grep { $_->{name} eq $column_family }
+		   @{ $cl->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
+	};
+	if ($@) {
+		$self->pool->fail($cl);
+		die 'Cassandra Request Failed ' . $@;
+	}
 
 	my $cdef;
 	if ( @{ $cfdef->{column_metadata} }
@@ -837,8 +890,9 @@ sub create_index {
 	push @{ $cfdef->{column_metadata} }, $cdef;
 
 	#print Dumper $cfdef;
-
-	$self->pool->get()->system_update_column_family($cfdef);
+	eval { $cl->system_update_column_family($cfdef) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 }
 
 =head2 ring
@@ -848,14 +902,20 @@ Usage: C<< ring($keyspace) >>
 Lists the addresses of all nodes on the cluster associated with the keyspace C<<$keyspace>>.
 
 =cut
+
 sub ring {
 
 	my $self = shift;
 
 	my $keyspace = shift;
+	my $cl       = $self->pool->get();
+	my @result   = eval {
+		map { $_->{endpoints}->[0] } @{ $cl->describe_ring($keyspace) };
+	};
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
 
-	return
-	  map { $_->{endpoints}->[0] } @{ $self->pool->get()->describe_ring($keyspace) };
+	return \@result;
 }
 
 =head1 BUGS
@@ -867,6 +927,10 @@ Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassand
 #TODO TODOs
 
 =head1 TODO
+
+B<Error Handling>
+
+Exceptions raised when calling Cassandra code should be report in error form with appropriate description.
 
 B<Unit Tests>
 
@@ -884,48 +948,48 @@ Ideally it would retry until it got enough results.
 
 B<Methods>
 
-The following are Thrift methods left unimplemented. 
+The following are Thrift methods left unimplemented.
 
-Not all of these will be implemented, since some aren't useful to the common developer. 
+Not all of these will be implemented, since some aren't useful to the common developer.
 
 Priority will be given to live schema updating methods.
 
 =over 2
 
 describe_cluster_name
-	
+
 string describe_cluster_name()
-	
+
 describe_keyspace
-	
+
 KsDef describe_keyspace(string keyspace)
-	
+
 describe_keyspaces
-	
+
 list<KsDef> describe_keyspaces()
-	
+
 describe_partitioner
-	
+
 string describe_partitioner()
-	
+
 describe_snitch
-	
+
 string describe_snitch()
-	
+
 describe_version
-	
+
 string describe_version()
-	
+
 system_drop_column_family
-	
+
 string system_drop_column_family(ColumnFamily column_family)
-	
+
 system_add_keyspace
-	
+
 string system_add_keyspace(KSDef ks_def)
-	
+
 system_drop_keyspace
-	
+
 string system_drop_keyspace(string keyspace)
 
 =back
