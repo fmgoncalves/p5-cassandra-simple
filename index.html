@@ -82,362 +82,246 @@
 -->
 
 <!-- start doc -->
-<a name='___top' class='dummyTopAnchor' ></a>
+<div name="index">
+<p><a name="__index__"></a></p>
 
-<div class='indexgroup'>
-<ul   class='indexList indexList1'>
-  <li class='indexItem indexItem1'><a href='#NAME'>NAME</a>
-  <li class='indexItem indexItem1'><a href='#VERSION'>VERSION</a>
-  <li class='indexItem indexItem1'><a href='#DESCRIPTION'>DESCRIPTION</a>
-  <li class='indexItem indexItem1'><a href='#SYNOPSYS'>SYNOPSYS</a>
-  <ul   class='indexList indexList2'>
-    <li class='indexItem indexItem2'><a href='#get'>get</a>
-    <li class='indexItem indexItem2'><a href='#multiget'>multiget</a>
-    <li class='indexItem indexItem2'><a href='#get_count'>get_count</a>
-    <li class='indexItem indexItem2'><a href='#multiget_count'>multiget_count</a>
-    <li class='indexItem indexItem2'><a href='#get_range'>get_range</a>
-    <li class='indexItem indexItem2'><a href='#get_indexed_slices'>get_indexed_slices</a>
-    <li class='indexItem indexItem2'><a href='#insert'>insert</a>
-    <li class='indexItem indexItem2'><a href='#insert_super'>insert_super</a>
-    <li class='indexItem indexItem2'><a href='#batch_insert'>batch_insert</a>
-    <li class='indexItem indexItem2'><a href='#remove'>remove</a>
-    <li class='indexItem indexItem2'><a href='#list_keyspace_cfs'>list_keyspace_cfs</a>
-    <li class='indexItem indexItem2'><a href='#create_column_family'>create_column_family</a>
-    <li class='indexItem indexItem2'><a href='#create_index'>create_index</a>
-  </ul>
-  <li class='indexItem indexItem1'><a href='#BUGS'>BUGS</a>
-  <li class='indexItem indexItem1'><a href='#TODO'>TODO</a>
-  <li class='indexItem indexItem1'><a href='#ACKNOWLEDGEMENTS'>ACKNOWLEDGEMENTS</a>
-  <li class='indexItem indexItem1'><a href='#AUTHOR'>AUTHOR</a>
-  <li class='indexItem indexItem1'><a href='#COPYRIGHT_AND_LICENSE'>COPYRIGHT AND LICENSE</a>
+<ul>
+
+  <li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#synopsys">SYNOPSYS</a></li>
+	<ul>
+
+		<li><a href="#get">get</a></li>
+		<li><a href="#multiget">multiget</a></li>
+		<li><a href="#get_count">get_count</a></li>
+		<li><a href="#multiget_count">multiget_count</a></li>
+		<li><a href="#get_range">get_range</a></li>
+		<li><a href="#get_indexed_slices">get_indexed_slices</a></li>
+		<li><a href="#insert">insert</a></li>
+		<li><a href="#insert_super">insert_super</a></li>
+		<li><a href="#batch_insert">batch_insert</a></li>
+		<li><a href="#remove">remove</a></li>
+		<li><a href="#list_keyspace_cfs">list_keyspace_cfs</a></li>
+		<li><a href="#create_column_family">create_column_family</a></li>
+		<li><a href="#create_index">create_index</a></li>
+		<li><a href="#ring">ring</a></li>
+	</ul>
+
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#todo">TODO</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
 </ul>
+
+<hr name="index" />
 </div>
+<!-- INDEX END -->
 
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="NAME"
->NAME</a></h1>
-
+/usr/bin/pod2html: lib/Cassandra/Simple.pm: unknown pod directive 'encoding' in paragraph 3.  ignoring.
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
 <p>Cassandra::Simple</p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="VERSION"
->VERSION</a></h1>
-
+<p>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
 <p>version 0.1</p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="DESCRIPTION"
->DESCRIPTION</a></h1>
-
-<p>Easy to use,
-Perl oriented client interface to Apache Cassandra.</p>
-
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>Easy to use, Perl oriented client interface to Apache Cassandra.</p>
 <p>This module attempts to abstract the underlying Thrift methods as much as possible to allow any Perl developer a small learning curve when using Cassandra.</p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="SYNOPSYS"
->SYNOPSYS</a></h1>
-
-<pre>        my ($keyspace, $column_family) = qw/simple simple/;
-        
-        my $conn = Cassandra::Simple-&#62;new(keyspace =&#62; $keyspace,);
-        
-        $conn-&#62;create_column_family( $keyspace, $column_family);
-        
-        $conn-&#62;insert($column_family, &#39;KeyA&#39;, [ [ &#39;ColumnA&#39; =&#62; &#39;AA&#39; ], [ &#39;ColumnB&#39; =&#62; &#39;AB&#39; ] ] );
-        
-        $conn-&#62;get($column_family, &#39;KeyA&#39;);
-        $conn-&#62;get($column_family, &#39;KeyA&#39;, { columns =&#62; [ qw/ColumnA/ ] });
-        $conn-&#62;get($column_family, &#39;KeyA&#39;, { column_count =&#62; 1, column_reversed =&#62; 1 });
-        
-        $conn-&#62;batch_insert($column_family, { &#39;KeyB&#39; =&#62; [ [ &#39;ColumnA&#39; =&#62; &#39;BA&#39; ] , [ &#39;ColumnB&#39; =&#62; &#39;BB&#39; ] ], &#39;KeyC&#39; =&#62; [ [ &#39;ColumnA&#39; =&#62; &#39;CA&#39; ] , [ &#39;ColumnD&#39; =&#62; &#39;CD&#39; ] ] });
-        
-        $conn-&#62;multiget($column_family, [qw/KeyA KeyC/]);
-        
-        $conn-&#62;get_range($column_family, { start=&#62; &#39;KeyA&#39;, finish =&#62; &#39;KeyB&#39;, column_count =&#62; 1 });
-        $conn-&#62;get_range($column_family);
-        
-        $conn-&#62;get_indexed_slices($column_family, { expression_list =&#62; [ [ &#39;ColumnA&#39; =&#62; &#39;BA&#39; ] ] });
-        
-        $conn-&#62;remove($column_family, [ &#39;KeyA&#39; ], { columns =&#62; [ &#39;ColumnA&#39; ]});
-        $conn-&#62;remove($column_family, [ &#39;KeyA&#39; ]);
-        $conn-&#62;remove($column_family);
-        
-        $conn-&#62;get_count($column_family, &#39;KeyA&#39;);
-        $conn-&#62;multiget_count($column_family, [ &#39;KeyB&#39;, &#39;KeyC&#39; ]);</pre>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="get"
->get</a></h2>
-
+<p>
+</p>
+<hr />
+<h1><a name="synopsys">SYNOPSYS</a></h1>
+<pre>
+        my ($keyspace, $column_family) = qw/simple simple/;</pre>
+<pre>
+        my $conn = Cassandra::Simple-&gt;new(keyspace =&gt; $keyspace,);</pre>
+<pre>
+        $conn-&gt;create_column_family( $keyspace, $column_family);</pre>
+<pre>
+        $conn-&gt;insert($column_family, 'KeyA', [ [ 'ColumnA' =&gt; 'AA' ], [ 'ColumnB' =&gt; 'AB' ] ] );</pre>
+<pre>
+        $conn-&gt;get($column_family, 'KeyA');
+        $conn-&gt;get($column_family, 'KeyA', { columns =&gt; [ qw/ColumnA/ ] });
+        $conn-&gt;get($column_family, 'KeyA', { column_count =&gt; 1, column_reversed =&gt; 1 });</pre>
+<pre>
+        $conn-&gt;batch_insert($column_family, { 'KeyB' =&gt; [ [ 'ColumnA' =&gt; 'BA' ] , [ 'ColumnB' =&gt; 'BB' ] ], 'KeyC' =&gt; [ [ 'ColumnA' =&gt; 'CA' ] , [ 'ColumnD' =&gt; 'CD' ] ] });</pre>
+<pre>
+        $conn-&gt;multiget($column_family, [qw/KeyA KeyC/]);</pre>
+<pre>
+        $conn-&gt;get_range($column_family, { start=&gt; 'KeyA', finish =&gt; 'KeyB', column_count =&gt; 1 });
+        $conn-&gt;get_range($column_family);</pre>
+<pre>
+        $conn-&gt;get_indexed_slices($column_family, { expression_list =&gt; [ [ 'ColumnA' =&gt; 'BA' ] ] });</pre>
+<pre>
+        $conn-&gt;remove($column_family, [ 'KeyA' ], { columns =&gt; [ 'ColumnA' ]});
+        $conn-&gt;remove($column_family, [ 'KeyA' ]);
+        $conn-&gt;remove($column_family);</pre>
+<pre>
+        $conn-&gt;get_count($column_family, 'KeyA');
+        $conn-&gt;multiget_count($column_family, [ 'KeyB', 'KeyC' ]);</pre>
+<p>
+</p>
+<h2><a name="get">get</a></h2>
 <p>Usage: <code>get($column_family, $key[, opt])</code></p>
-
-<p><code>$opt</code> is a <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p><code>$opt</code> is a <em>HASH</em> and can have the following keys:</p>
 <p>columns, column_start, column_finish, column_count, column_reversed, super_column, consistency_level_read</p>
-</blockquote>
-
-<p>Returns an HASH of the form <code>{ column =&#62; value, column =&#62; value }</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="multiget"
->multiget</a></h2>
-
+<p>Returns an HASH of the form <code>{ column =&gt; value, column =&gt; value }</code></p>
+<p>
+</p>
+<h2><a name="multiget">multiget</a></h2>
 <p>Usage: <code>multiget($column_family, $keys[, opt])</code></p>
-
-<p><code>$keys</code> should be an <i>ARRAYREF</i> of keys to fetch.</p>
-
+<p><code>$keys</code> should be an <em>ARRAYREF</em> of keys to fetch.</p>
 <p>All parameters in <code>$opt</code> are the same as in <code>get()</code></p>
-
-<p>Returns an HASH of the form <code>{ key =&#62; { column =&#62; value, column =&#62; value }, key =&#62; { column =&#62; value, column =&#62; value } }</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="get_count"
->get_count</a></h2>
-
+<p>Returns an HASH of the form <code>{ key =&gt; { column =&gt; value, column =&gt; value }, key =&gt; { column =&gt; value, column =&gt; value } }</code></p>
+<p>
+</p>
+<h2><a name="get_count">get_count</a></h2>
 <p>Usage: <code>get_count($column_family, $key[, opt])</code></p>
-
-<p><code>$opt</code> is a <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p><code>$opt</code> is a <em>HASH</em> and can have the following keys:</p>
 <p>columns, column_start, column_finish, super_column, consistency_level_read</p>
-</blockquote>
-
 <p>Returns the count as an int</p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="multiget_count"
->multiget_count</a></h2>
-
+<p>
+</p>
+<h2><a name="multiget_count">multiget_count</a></h2>
 <p>Usage: <code>multiget_count($column_family, $keys[, opt])</code></p>
-
-<p><code>$keys</code> should be an <i>ARRAYREF</i> of keys.</p>
-
+<p><code>$keys</code> should be an <em>ARRAYREF</em> of keys.</p>
 <p>All parameters in <code>$opt</code> are the same as in <code>get_count()</code></p>
-
-<p>Returns a mapping of <code>key -&#62; count</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="get_range"
->get_range</a></h2>
-
+<p>Returns a mapping of <code>key -&gt; count</code></p>
+<p>
+</p>
+<h2><a name="get_range">get_range</a></h2>
 <p>Usage: <code>get_range( $column_family[, opt])</code></p>
-
-<p><code>$opt</code> is a <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p><code>$opt</code> is a <em>HASH</em> and can have the following keys:</p>
 <p>start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, super_column, consistency_level_read</p>
-</blockquote>
-
-<p>Returns an <i>HASH</i> of the form <code>{ key =&#62; { column =&#62; value, column =&#62; value }, key =&#62; { column =&#62; value, column =&#62; value } }</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="get_indexed_slices"
->get_indexed_slices</a></h2>
-
+<p>Returns an <em>HASH</em> of the form <code>{ key =&gt; { column =&gt; value, column =&gt; value }, key =&gt; { column =&gt; value, column =&gt; value } }</code></p>
+<p>
+</p>
+<h2><a name="get_indexed_slices">get_indexed_slices</a></h2>
 <p>Usage: <code>get_indexed_slices($column_family, $index_clause[, opt])</code></p>
-
-<p><code>$index_clause</code> is an <i>HASH</i> containing the following keys:</p>
-
-<blockquote>
+<p><code>$index_clause</code> is an <em>HASH</em> containing the following keys:</p>
 <p>expression_list, start_key, row_count</p>
-
-<p>The <i>expression_list</i> is an <i>ARRAYREF</i> of the form <code>[ [ column =&#62; value ] ]</code></p>
-</blockquote>
-
-<p><code>$opt</code> is an <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p>The <em>expression_list</em> is an <em>ARRAYREF</em> of the form <code>[ [ column =&gt; value ] ]</code></p>
+<p><code>$opt</code> is an <em>HASH</em> and can have the following keys:</p>
 <p>columns, column_start, column_finish, column_reversed, column_count, consistency_level_read</p>
-</blockquote>
-
-<p>Returns an <i>HASH</i> of the form <code>{ key =&#62; { column =&#62; value, column =&#62; value }, key =&#62; { column =&#62; value, column =&#62; value } }</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="insert"
->insert</a></h2>
-
+<p>Returns an <em>HASH</em> of the form <code>{ key =&gt; { column =&gt; value, column =&gt; value }, key =&gt; { column =&gt; value, column =&gt; value } }</code></p>
+<p>
+</p>
+<h2><a name="insert">insert</a></h2>
 <p>Usage: <code>insert($column_family, $key, $columns[, opt])</code></p>
-
-<p>The <code>$columns</code> is an <i>HASHREF</i> of the form <code>{ column =&#62; value, column =&#62; value }</code></p>
-
-<p><code>$opt</code> is an <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p>The <code>$columns</code> is an <em>HASHREF</em> of the form <code>{ column =&gt; value, column =&gt; value }</code></p>
+<p><code>$opt</code> is an <em>HASH</em> and can have the following keys:</p>
 <p>timestamp, ttl, consistency_level_write</p>
-</blockquote>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="insert_super"
->insert_super</a></h2>
-
+<p>
+</p>
+<h2><a name="insert_super">insert_super</a></h2>
 <p>Usage: <code>insert_super($column_family, $key, $columns[, opt])</code></p>
-
-<p>The <code>$columns</code> is an <i>HASH</i> of the form <code>{ super_column =&#62; { column =&#62; value, column =&#62; value } }</code></p>
-
-<p><code>$opt</code> is an <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p>The <code>$columns</code> is an <em>HASH</em> of the form <code>{ super_column =&gt; { column =&gt; value, column =&gt; value } }</code></p>
+<p><code>$opt</code> is an <em>HASH</em> and can have the following keys:</p>
 <p>timestamp, ttl, consistency_level_write</p>
-</blockquote>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="batch_insert"
->batch_insert</a></h2>
-
+<p>
+</p>
+<h2><a name="batch_insert">batch_insert</a></h2>
 <p>Usage: <code>batch_insert($column_family, $rows[, opt])</code></p>
-
-<p><code>$rows</code> is an <i>HASH</i> of the form <code>{ key =&#62; { column =&#62; value , column =&#62; value }, key =&#62; { column =&#62; value , column =&#62; value } }</code></p>
-
-<p><code>$opt</code> is an <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p><code>$rows</code> is an <em>HASH</em> of the form <code>{ key =&gt; { column =&gt; value , column =&gt; value }, key =&gt; { column =&gt; value , column =&gt; value } }</code></p>
+<p><code>$opt</code> is an <em>HASH</em> and can have the following keys:</p>
 <p>timestamp, ttl, consistency_level_write</p>
-</blockquote>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="remove"
->remove</a></h2>
-
+<p>
+</p>
+<h2><a name="remove">remove</a></h2>
 <p>Usage: <code>remove($column_family[, $keys][, opt])</code></p>
-
-<p><code>$keys</code> is an <i>ARRAY</i> of keys to be deleted.</p>
-
+<p><code>$keys</code> is a key or an <em>ARRAY</em> of keys to be deleted.</p>
 <p>A removal whitout keys truncates the whole column_family.</p>
-
-<p><code>$opt</code> is an <i>HASH</i> and can have the following keys:</p>
-
-<blockquote>
+<p><code>$opt</code> is an <em>HASH</em> and can have the following keys:</p>
 <p>columns, super_column, write_consistency_level</p>
-</blockquote>
-
 <p>The timestamp used for remove is returned.</p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="list_keyspace_cfs"
->list_keyspace_cfs</a></h2>
-
+<p>
+</p>
+<h2><a name="list_keyspace_cfs">list_keyspace_cfs</a></h2>
 <p>Usage: <code>list_keyspace_cfs($keyspace)</code></p>
-
-<p>Returns an HASH of <code>{ column_family_name =&#62; column_family_type }</code> where column family type is either <code>Standard</code> or <code>Super</code></p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="create_column_family"
->create_column_family</a></h2>
-
+<p>Returns an HASH of <code>{ column_family_name =&gt; column_family_type }</code> where column family type is either <code>Standard</code> or <code>Super</code></p>
+<p>
+</p>
+<h2><a name="create_column_family">create_column_family</a></h2>
 <p>Usage <code>create_column_family($keyspace, $column_family[, $is_super][, $comment])</code></p>
-
 <p><code>$is_super</code> is a boolean indicating if this is a Standard or Super Column Family.</p>
-
-<h2><a class='u' href='#___top' title='click to go to top of document'
-name="create_index"
->create_index</a></h2>
-
+<p>
+</p>
+<h2><a name="create_index">create_index</a></h2>
 <p>Usage: <code>create_index($keyspace, $column_family, $column, [$validation_class])</code></p>
-
 <p>Creates an index on <code>$column</code> of <code>$column_family</code>.</p>
-
-<p><code>&#60;$validation_class</code>&#62; only applies when <code>$column</code> doesn&#39;t yet exist, and even then it is optional (defaults to <i>BytesType</i>).</p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="BUGS"
->BUGS</a></h1>
-
-<p>Bugs should be reported on github at <a href="https://github.com/fmgoncalves/p5-cassandra-simple" class="podlinkurl"
->https://github.com/fmgoncalves/p5-cassandra-simple</a>.</p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="TODO"
->TODO</a></h1>
-
-<p><b>Unit Tests</b></p>
-
-<blockquote>
-<p>Sort of done in the examples folder <a href="https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples" class="podlinkurl"
->https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples</a></p>
-</blockquote>
-
-<p><b>Methods</b></p>
-
+<p><code>$validation_class</code> only applies when <code>$column</code> doesn't yet exist, and even then it is optional (defaults to <em>BytesType</em>).</p>
+<p>
+</p>
+<h2><a name="ring">ring</a></h2>
+<p>Usage: <code>ring($keyspace)</code></p>
+<p>Lists the addresses of all nodes on the cluster associated with the keyspace <code>&lt;$keyspace</code>&gt;.</p>
+<p>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Bugs should be reported on github at <a href="https://github.com/fmgoncalves/p5-cassandra-simple">https://github.com/fmgoncalves/p5-cassandra-simple</a>.</p>
+<p>
+</p>
+<hr />
+<h1><a name="todo">TODO</a></h1>
+<p><strong>Error Handling</strong></p>
+<p>Exceptions raised when calling Cassandra code should be report in error form with appropriate description.</p>
+<p><strong>Unit Tests</strong></p>
+<p>Sort of done in the examples folder
+<a href="https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples">https://github.com/fmgoncalves/p5-cassandra-simple/tree/master/examples</a></p>
+<p><strong>Tombstones</strong></p>
+<p>get, get_range and get_indexed_slices should probably filter out tombstones, even if it means returning less than the requested count.
+Ideally it would retry until it got enough results.</p>
+<p><strong>Methods</strong></p>
 <p>The following are Thrift methods left unimplemented.</p>
-
-<p>Not all of these will be implemented, since some aren&#39;t useful to the common developer.</p>
-
+<p>Not all of these will be implemented, since some aren't useful to the common developer.</p>
 <p>Priority will be given to live schema updating methods.</p>
-
-<blockquote>
 <p>describe_cluster_name</p>
-
-<p>string describe_cluster_name()</p>
-
+<p>string <code>describe_cluster_name()</code></p>
 <p>describe_keyspace</p>
-
 <p>KsDef describe_keyspace(string keyspace)</p>
-
 <p>describe_keyspaces</p>
-
-<p>list&#60;KsDef&#62; describe_keyspaces()</p>
-
+<p>list&lt;KsDef&gt; <code>describe_keyspaces()</code></p>
 <p>describe_partitioner</p>
-
-<p>string describe_partitioner()</p>
-
-<p>describe_ring</p>
-
-<p>list&#60;TokenRange&#62; describe_ring(keyspace)</p>
-
+<p>string <code>describe_partitioner()</code></p>
 <p>describe_snitch</p>
-
-<p>string describe_snitch()</p>
-
+<p>string <code>describe_snitch()</code></p>
 <p>describe_version</p>
-
-<p>string describe_version()</p>
-
+<p>string <code>describe_version()</code></p>
 <p>system_drop_column_family</p>
-
 <p>string system_drop_column_family(ColumnFamily column_family)</p>
-
 <p>system_add_keyspace</p>
-
 <p>string system_add_keyspace(KSDef ks_def)</p>
-
 <p>system_drop_keyspace</p>
-
 <p>string system_drop_keyspace(string keyspace)</p>
-</blockquote>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="ACKNOWLEDGEMENTS"
->ACKNOWLEDGEMENTS</a></h1>
-
+<p>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
 <p>Implementation based on Cassandra::Lite.</p>
-
-<blockquote>
-<p><a href="http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite.pm" class="podlinkurl"
->http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite.pm</a></p>
-</blockquote>
-
+<p><a href="http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite.pm">http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite.pm</a></p>
 <p>API based on Pycassa.</p>
-
-<blockquote>
-<p><a href="http://pycassa.github.com/pycassa/" class="podlinkurl"
->http://pycassa.github.com/pycassa/</a></p>
-</blockquote>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="AUTHOR"
->AUTHOR</a></h1>
-
-<p>Filipe Gon&#231;alves <code>&#60;the.wa.syndrome@gmail&#62;</code></p>
-
-<h1><a class='u' href='#___top' title='click to go to top of document'
-name="COPYRIGHT_AND_LICENSE"
->COPYRIGHT AND LICENSE</a></h1>
-
-<p>This software is copyright (c) 2011 by Filipe Gon&#231;alves.</p>
-
+<p><a href="http://pycassa.github.com/pycassa/">http://pycassa.github.com/pycassa/</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Filipe Gonçalves <code>&lt;the.wa.syndrome@gmail&gt;</code></p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright_and_license">COPYRIGHT AND LICENSE</a></h1>
+<p>This software is copyright (c) 2011 by Filipe Gonçalves.</p>
 <p>This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.</p>
 
 <!-- end doc -->
