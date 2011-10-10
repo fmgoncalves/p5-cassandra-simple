@@ -59,7 +59,8 @@ use Data::Dumper;
 
 use Any::Moose;
 has 'pool' => ( is => 'rw', isa => 'Cassandra::Pool', lazy_build => 1 );
-has 'consistency_level_read'  => ( is => 'rw', isa => 'Str', default => 'ONE' );
+has 'ksdef' => ( is => 'rw', lazy_build => 1 );
+has 'consistency_level_read' => ( is => 'rw', isa => 'Str', default => 'ONE' );
 has 'consistency_level_write' => ( is => 'rw', isa => 'Str', default => 'ONE' );
 has 'keyspace'    => ( is => 'rw', isa => 'Str' );
 has 'password'    => ( is => 'rw', isa => 'Str', default => '' );
@@ -71,6 +72,7 @@ has 'username' => ( is => 'rw', isa => 'Str', default => '' );
 use 5.010;
 use Cassandra::Cassandra;
 use Cassandra::Pool;
+use Cassandra::Composite qw/composite composite_to_array/;
 use strict;
 use warnings;
 ### Thrift Protocol/Client methods ###
@@ -78,7 +80,6 @@ use warnings;
 sub _build_pool {
 	my $self = shift;
 
-	#print "BBBBB\n";
 	return
 	  new Cassandra::Pool(
 						   $self->keyspace,
@@ -89,6 +90,27 @@ sub _build_pool {
 							  password    => $self->password
 						   }
 	  );
+}
+
+sub _build_ksdef {
+	my $self = shift;
+
+	my $cl = $self->pool->get();
+	my $result = eval { $cl->describe_keyspace( $self->keyspace ) };
+
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
+
+	return {
+		map {
+			my $comparator = $_->{comparator_type};
+			my $validation = $_->{key_validation_class};
+			$comparator =~ s/org.apache.cassandra.db.marshal.//g;
+			$validation =~ s/org.apache.cassandra.db.marshal.//g;
+			$_->{name} =>
+			  { "comparator" => $comparator, "key_validation" => $validation }
+		  } @{ $result->{cf_defs} }
+	};
 }
 
 sub _consistency_level_read {
@@ -115,11 +137,19 @@ sub _consistency_level_write {
 sub _column_or_supercolumn_to_hash {
 	my $self = shift;
 
+	my $cf      = shift;
 	my $c_or_sc = shift;
+
+	my $is_composite = 0;
+	$is_composite = 1 if $self->ksdef->{$cf}->{comparator} =~ m/CompositeType/;
 
 	my @result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
-		@result = ( $_->{column}->{name}, $_->{column}->{value} );
+		my $name =
+		    $is_composite
+		  ? $self->composite_to_array( $_->{column}->{name} )
+		  : $_->{column}->{name};
+		@result = ( $name, $_->{column}->{value} );
 	} elsif ( exists $c_or_sc->{super_column} ) {
 		@result = (
 					$c_or_sc->{super_column}->{name},
@@ -173,7 +203,10 @@ sub get {
 
 	if ( exists $opt->{columns} )
 	{ #TODO extra case for when only 1 column is requested, use thrift api's get
-		$predicate->{column_names} = $opt->{columns};
+		$predicate->{column_names} = [
+			map {$_ 
+			  } @{ $opt->{columns} }
+		];
 	} else {
 		my $sliceRange = Cassandra::SliceRange->new($opt);
 		$sliceRange->{start}    = $opt->{column_start}    // '';
@@ -186,12 +219,12 @@ sub get {
 	my $cl    = $self->pool->get();
 	my $result =
 	  eval { $cl->get_slice( $key, $columnParent, $predicate, $level ) };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	my %result_columns =
 	  map {
-		my $a = $self->_column_or_supercolumn_to_hash($_);
+		my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
 		$a->[0] => $a->[1]
 	  } @{$result};
 
@@ -245,8 +278,13 @@ sub multiget {
 	else      { $self->pool->put($cl) }
 
 	my %result_columns = map {
-		$_ => { map { $_->{column}->{name} => $_->{column}->{value} }
-				@{ $result->{$_} } }
+		$_ => {
+			map {
+				my $a =
+				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+				$a->[0] => $a->[1]
+			  } @{ $result->{$_} }
+		  }
 	} keys %$result;
 
 	return \%result_columns;
@@ -426,7 +464,8 @@ sub get_range {
 	my %result_columns = map {
 		$_->{key} => {
 			map {
-				my $a = $self->_column_or_supercolumn_to_hash($_);
+				my $a =
+				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
 				$a->[0] => $a->[1]
 			  } @{ $_->{columns} }
 		  }
@@ -521,8 +560,13 @@ sub get_indexed_slices {
 	else      { $self->pool->put($cl) }
 
 	my %result_keys = map {
-		$_->{key} => { map { $_->{column}->{name} => $_->{column}->{value} }
-					   @{ $_->{columns} } }
+		$_->{key} => {
+			map {
+				my $a =
+				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+				$a->[0] => $a->[1]
+			  } @{ $_->{columns} }
+		  }
 	} @{$result};
 
 	return \%result_keys;
@@ -543,7 +587,6 @@ timestamp, ttl, consistency_level_write
 =back
 
 =cut
-
 sub insert {
 	my $self = shift;
 
@@ -558,22 +601,22 @@ sub insert {
 
 	my @mutations = map {
 		new Cassandra::Mutation(
-						{
-						  column_or_supercolumn =>
-							Cassandra::ColumnOrSuperColumn->new(
-							   {
-								 column =>
-								   new Cassandra::Column(
-									  {
-										name      => $_,
-										value     => $columns->{$_},
-										timestamp => $opt->{timestamp} // time,
-										ttl       => $opt->{ttl} // undef,
-									  }
-								   )
-							   }
-							)
-						}
+			  {
+				column_or_supercolumn =>
+				  Cassandra::ColumnOrSuperColumn->new(
+					 {
+					   column =>
+						 new Cassandra::Column(
+							{
+							  name => $_,
+							  value     => $columns->{$_},
+							  timestamp => $opt->{timestamp} // time,
+							  ttl       => $opt->{ttl} // undef,
+							}
+						 )
+					 }
+				  )
+			  }
 		  )
 	} keys %$columns;
 
@@ -691,15 +734,15 @@ sub batch_insert {
 						   column_or_supercolumn =>
 							 Cassandra::ColumnOrSuperColumn->new(
 							   {
-								  column =>
-									new Cassandra::Column(
+								  column => new Cassandra::Column(
 									  {
-										 name      => $_,
+										 name =>
+$_,
 										 value     => $columns->{$_},
 										 timestamp => $opt->{timestamp} // time,
 										 ttl       => $opt->{ttl} // undef,
 									  }
-									)
+								  )
 							   }
 							 )
 						}
@@ -909,7 +952,8 @@ sub ring {
 
 	my $keyspace = shift;
 	my $cl       = $self->pool->get();
-	my @result   = eval {
+
+	my @result = eval {
 		map { $_->{endpoints}->[0] } @{ $cl->describe_ring($keyspace) };
 	};
 	if   ($@) { $self->pool->fail($cl) }
@@ -927,6 +971,11 @@ Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassand
 #TODO TODOs
 
 =head1 TODO
+
+B<Thrift Type Checking and Packing/Unpacking>
+
+The defined types (or defaults) for each column family are known and should therefore be complied with. 
+Introducing Composite Types has forcefully introduced this functionality to an extent, but there should be a refactoring to make this ubiquitous to the client.
 
 B<Error Handling>
 

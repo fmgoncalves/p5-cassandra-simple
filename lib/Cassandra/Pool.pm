@@ -98,14 +98,20 @@ sub create_client {
 sub get {
 	my $self = shift;
 
+	#TODO: obviously not a good solution. should use a priorityqueue or something, not sort the whole pool at every get.
 	my @ol =
-	  sort { $self->{pool}->{$a}->[1] cmp $self->{pool}->{$b}->[1] } #TODO: obviously not a good solution. should use a priorityqueue or something, not sort the whole pool at every get.
+	  sort { $self->{pool}->{$a}->[1] cmp $self->{pool}->{$b}->[1] } 
 	  keys %{ $self->{pool} };
 	my $server_name = shift @ol;
 	
+	#print Dumper $self->{pool}->{$server_name};
+	#print ">Defined long name ". defined $self->{pool}->{$server_name}->[0]."\n";
+	
 	my $cl          = $self->{pool}->{$server_name}->[0];
 
-	while ( (not defined $cl) and scalar @ol ) {
+	#print ">Defined short ". defined $cl."\n";
+
+	while ( (not defined $cl)  and scalar @ol ) {
 		#print ">> undef $server_name ". defined $cl, "\n";
 		eval {
 			$cl = $self->create_client(
@@ -124,6 +130,9 @@ sub get {
 	}
 #	print "COUNTER for $server_name -> " . $self->{pool}->{$server_name}->[1], "\n";
 	$self->{pool}->{$server_name}->[1] += 1;
+
+	#print "$server_name ->". defined $cl. " |";
+
 	return $cl;
 }
 
@@ -139,11 +148,12 @@ sub put {
 sub fail {
 	my $self = shift;
 	my $client = shift;
-	
 	my $server_name = $client->{input}->{trans}->{transport}->{host};
 	
+#	print "FAILED $server_name";
+	
 	$self->{pool}->{$server_name}->[1] += 5;
-	$self->{pool}->{$server_name}->[0] += undef;
+	$self->{pool}->{$server_name}->[0] = undef;
 }
 
 
