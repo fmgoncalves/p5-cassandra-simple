@@ -184,6 +184,13 @@ BUGS
     <https://github.com/fmgoncalves/p5-cassandra-simple>.
 
 TODO
+    Thrift Type Checking and Packing/Unpacking
+
+    The defined types (or defaults) for each column family are known and
+    should therefore be complied with. Introducing Composite Types has
+    forcefully introduced this functionality to an extent, but there should
+    be a refactoring to make this ubiquitous to the client.
+
     Error Handling
 
     Exceptions raised when calling Cassandra code should be report in error

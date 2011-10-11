@@ -21,10 +21,9 @@ sub composite {
 }
 
 sub composite_to_array {
-	my $self = shift;
 	my $name = shift;
 
-	#	print "Input -> ".Dumper $name;
+	#print "Input -> ".Dumper $name;
 	my $size = length($name);
 	my @a;
 	my $len = 0;
@@ -34,7 +33,7 @@ sub composite_to_array {
 		$len += $off + 3;
 	} while ( $len < $size );
 
-	#	print "Output ->". Dumper \@a;
+	#print "Output ->". Dumper \@a;
 	return \@a;
 }
 

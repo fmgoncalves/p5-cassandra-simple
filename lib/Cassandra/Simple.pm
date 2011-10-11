@@ -72,7 +72,6 @@ has 'username' => ( is => 'rw', isa => 'Str', default => '' );
 use 5.010;
 use Cassandra::Cassandra;
 use Cassandra::Pool;
-use Cassandra::Composite qw/composite composite_to_array/;
 use strict;
 use warnings;
 ### Thrift Protocol/Client methods ###
@@ -140,16 +139,9 @@ sub _column_or_supercolumn_to_hash {
 	my $cf      = shift;
 	my $c_or_sc = shift;
 
-	my $is_composite = 0;
-	$is_composite = 1 if $self->ksdef->{$cf}->{comparator} =~ m/CompositeType/;
-
 	my @result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
-		my $name =
-		    $is_composite
-		  ? $self->composite_to_array( $_->{column}->{name} )
-		  : $_->{column}->{name};
-		@result = ( $name, $_->{column}->{value} );
+		@result = ( $_->{column}->{name}, $_->{column}->{value} );
 	} elsif ( exists $c_or_sc->{super_column} ) {
 		@result = (
 					$c_or_sc->{super_column}->{name},
@@ -979,7 +971,7 @@ Introducing Composite Types has forcefully introduced this functionality to an e
 
 B<Error Handling>
 
-Exceptions raised when calling Cassandra code should be report in error form with appropriate description.
+Exceptions raised when calling Cassandra code should be reported in error form with appropriate description.
 
 B<Unit Tests>
 
