@@ -834,20 +834,16 @@ Returns an HASH of C<< { column_family_name => column_family_type } >> where col
 =cut
 
 sub list_keyspace_cfs {
-	my ( $self, $keyspace ) = @_;
-	my $cl = $self->pool->get();
-	my $result = eval { $cl->describe_keyspace($keyspace) };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
-
-	return map { $_->{name} => $_->{column_type} } @{ $result->{cf_defs} };
+	my $self = shift;
+	return keys % {$self->ksdef};
 }
 
 =head2 create_column_family
 
-Usage C<< create_column_family($keyspace, $column_family[, $is_super][, $comment]) >>
+Usage C<< create_column_family($keyspace, $column_family[, $cfdef]) >>
 
-C<$is_super> is a boolean indicating if this is a Standard or Super Column Family.
+Creates a new column family C<$column_family> in keyspace C<$keyspace>.
+C<$cfdef> is an HASH containing Column Family Definition options (column_type, comparator_type, etc.).
 
 =cut
 
@@ -856,18 +852,15 @@ sub create_column_family {
 
 	my $keyspace      = shift;
 	my $column_family = shift;
-	my $is_super      = shift // 0;
-	my $comment       = shift // undef;
-
-	my $cfdef = Cassandra::CfDef->new();
-
-	$cfdef->{name}        = $column_family;
-	$cfdef->{keyspace}    = $keyspace;
-	$cfdef->{comment}     = $comment;
-	$cfdef->{column_type} = $is_super ? 'Super' : 'Standard';
-
+	my $opt           = shift // {};
+    
+    $opt->{name}        = $column_family;
+	$opt->{keyspace}    = $keyspace;
+	
+	my $cfdef = Cassandra::CfDef->new($opt);
+print Dumper $cfdef;
 	my $cl = $self->pool->get();
-	eval { $cl->system_add_column_family($cfdef); };
+	print Dumper $cl->system_add_column_family($cfdef); 
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
 }

@@ -193,8 +193,8 @@ TODO
 
     Error Handling
 
-    Exceptions raised when calling Cassandra code should be report in error
-    form with appropriate description.
+    Exceptions raised when calling Cassandra code should be reported in
+    error form with appropriate description.
 
     Unit Tests
 

@@ -9,7 +9,7 @@ sub println {
 	print @_, "\n";
 }
 
-my ( $keyspace, $column_family ) = qw/simple simple/;
+my ( $keyspace, $column_family ) = qw/simple ttlsimple/;
 
 my $conn = Cassandra::Simple->new( keyspace => $keyspace, );
 
@@ -18,7 +18,7 @@ my $present =
 
 unless ($present) {
 	println "Creating $column_family in $keyspace";
-	$conn->create_column_family( $keyspace, $column_family, 1 );
+	$conn->create_column_family( $keyspace, $column_family );
 }
 
 println "\$conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } )";

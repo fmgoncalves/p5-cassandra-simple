@@ -4,7 +4,7 @@ use warnings;
 use Data::Dumper;
 
 use Cassandra::Simple;
-use Cassandra::Composite qw/composite/;
+use Cassandra::Composite qw/composite composite_to_array/;
 
 use Sys::Hostname qw/hostname/;
 
@@ -12,7 +12,7 @@ sub println {
 	print @_, "\n";
 }
 
-my ( $keyspace, $column_family ) = qw/simple simple/;
+my ( $keyspace, $column_family, $composite_column_family) = qw/simple simple simplecomposite/;
 
 my $conn = Cassandra::Simple->new( server_name => '127.0.0.1',
 								   keyspace    => $keyspace, );
@@ -23,6 +23,14 @@ my $present =
 unless ($present) {
 	println "Creating $column_family in $keyspace";
 	$conn->create_column_family( $keyspace, $column_family );
+}
+
+$present =
+  grep { $_ eq $composite_column_family} @{ [ $conn->list_keyspace_cfs($keyspace) ] };
+
+unless ($present) {
+	println "Creating $composite_column_family in $keyspace";
+	$conn->create_column_family( $keyspace, $composite_column_family );
 }
 
 #Method to test					code here		success
@@ -150,11 +158,11 @@ println Dumper $conn->get_range($column_family);
 println "\$conn->ring('simple')";
 println Dumper $conn->ring('simple');
 
-$column_family = "TCF";
+
 println
-"\$conn->insert(  'TCF',  'hello',  {  composite( 'a','en') => 'world' ,  composite('a','pt') => 'mundo'  } )";
+"\$conn->insert(  $composite_column_family,  'hello',  {  composite( 'a','en') => 'world' ,  composite('a','pt') => 'mundo'  } )";
 println Dumper $conn->insert(
-							  $column_family, "hello",
+							  $composite_column_family, "hello",
 							  {
 								 composite( "a", "en" ) => "world",
 								 composite( "a", "pt" ) => "mundo"
@@ -162,9 +170,10 @@ println Dumper $conn->insert(
 );
 
 println
-  "\$conn->get( 'TCF',  'hello', { columns => [ composite('a', 'pt' ) ] } )";
-println Dumper $conn->get( $column_family, "hello",
+  "\$conn->get( $composite_column_family,  'hello', { columns => [ composite('a', 'pt' ) ] } )";
+my $x = $conn->get( $composite_column_family, "hello",
 						   { columns => [ composite( "a", "pt" ) ] } );
+println Dumper { map { ( join ':', @{composite_to_array($_)} ) => $x->{$_} } keys % $x };
 
-println Dumper "\$conn->remove($column_family)";
-println Dumper $conn->remove($column_family);
+println Dumper "\$conn->remove($composite_column_family)";
+println Dumper $conn->remove($composite_column_family);

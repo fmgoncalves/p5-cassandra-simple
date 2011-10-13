@@ -28,7 +28,7 @@ my $present = grep { $_ eq $column_family } @{[ $conn->list_keyspace_cfs($keyspa
 
 unless ( $present ){
 	println "Creating $column_family in $keyspace";
-	$conn->create_column_family($keyspace, $column_family, 1);
+	$conn->create_column_family($keyspace, $column_family, {column_type => 'Super'});
 }
 
 println "\$conn->insert($column_family, 'KeyA', { 'SuperColumnA' => { 'SubColumnA' => 'AAA', 'SubColumnB' => 'AAB'}, 'SuperColumnB' => { 'SubColumnA' => 'ABA', 'SubColumnB' => 'ABB'} })";
