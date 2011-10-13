@@ -158,11 +158,11 @@ SYNOPSYS
     column family type is either "Standard" or "Super"
 
   create_column_family
-    Usage "create_column_family($keyspace, $column_family[, $is_super][,
-    $comment])"
+    Usage "create_column_family($keyspace, $column_family[, $cfdef])"
 
-    $is_super is a boolean indicating if this is a Standard or Super Column
-    Family.
+    Creates a new column family $column_family in keyspace $keyspace. $cfdef
+    is an HASH containing Column Family Definition options (column_type,
+    comparator_type, etc.).
 
   create_index
     Usage: "create_index($keyspace, $column_family, $column,
