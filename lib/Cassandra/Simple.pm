@@ -195,10 +195,7 @@ sub get {
 
 	if ( exists $opt->{columns} )
 	{ #TODO extra case for when only 1 column is requested, use thrift api's get
-		$predicate->{column_names} = [
-			map {$_ 
-			  } @{ $opt->{columns} }
-		];
+		$predicate->{column_names} = [ map { $_ } @{ $opt->{columns} } ];
 	} else {
 		my $sliceRange = Cassandra::SliceRange->new($opt);
 		$sliceRange->{start}    = $opt->{column_start}    // '';
@@ -579,6 +576,7 @@ timestamp, ttl, consistency_level_write
 =back
 
 =cut
+
 sub insert {
 	my $self = shift;
 
@@ -593,22 +591,22 @@ sub insert {
 
 	my @mutations = map {
 		new Cassandra::Mutation(
-			  {
-				column_or_supercolumn =>
-				  Cassandra::ColumnOrSuperColumn->new(
-					 {
-					   column =>
-						 new Cassandra::Column(
-							{
-							  name => $_,
-							  value     => $columns->{$_},
-							  timestamp => $opt->{timestamp} // time,
-							  ttl       => $opt->{ttl} // undef,
-							}
-						 )
-					 }
-				  )
-			  }
+						{
+						  column_or_supercolumn =>
+							Cassandra::ColumnOrSuperColumn->new(
+							   {
+								 column =>
+								   new Cassandra::Column(
+									  {
+										name      => $_,
+										value     => $columns->{$_},
+										timestamp => $opt->{timestamp} // time,
+										ttl       => $opt->{ttl} // undef,
+									  }
+								   )
+							   }
+							)
+						}
 		  )
 	} keys %$columns;
 
@@ -726,15 +724,15 @@ sub batch_insert {
 						   column_or_supercolumn =>
 							 Cassandra::ColumnOrSuperColumn->new(
 							   {
-								  column => new Cassandra::Column(
+								  column =>
+									new Cassandra::Column(
 									  {
-										 name =>
-$_,
+										 name      => $_,
 										 value     => $columns->{$_},
 										 timestamp => $opt->{timestamp} // time,
 										 ttl       => $opt->{ttl} // undef,
 									  }
-								  )
+									)
 							   }
 							 )
 						}
@@ -835,7 +833,7 @@ Returns an HASH of C<< { column_family_name => column_family_type } >> where col
 
 sub list_keyspace_cfs {
 	my $self = shift;
-	return keys % {$self->ksdef};
+	return keys %{ $self->ksdef };
 }
 
 =head2 create_column_family
@@ -853,24 +851,24 @@ sub create_column_family {
 	my $keyspace      = shift;
 	my $column_family = shift;
 	my $opt           = shift // {};
-    
-    $opt->{name}        = $column_family;
-	$opt->{keyspace}    = $keyspace;
-	
+
+	$opt->{name}     = $column_family;
+	$opt->{keyspace} = $keyspace;
+
 	my $cfdef = Cassandra::CfDef->new($opt);
-print Dumper $cfdef;
+	print Dumper $cfdef;
 	my $cl = $self->pool->get();
-	print Dumper $cl->system_add_column_family($cfdef); 
+	print Dumper $cl->system_add_column_family($cfdef);
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
 }
 
 =head2 create_index
 
-Usage: C<< create_index($keyspace, $column_family, $column, [$validation_class]) >>
+Usage: C<< create_index($keyspace, $column_family, $columns, [$validation_class]) >>
 
-Creates an index on C<$column> of C<$column_family>.
-
+Creates an index on C<$columns> of C<$column_family>.
+C<$columns> is an ARRAY of column names to be indexed.
 C<$validation_class> only applies when C<$column> doesn't yet exist, and even then it is optional (defaults to I<BytesType>).
 
 =cut
@@ -880,7 +878,11 @@ sub create_index {
 
 	my $keyspace      = shift;
 	my $column_family = shift;
-	my $column        = shift;
+	my $columns       = shift;
+
+	if ( !UNIVERSAL::isa( $columns, 'ARRAY' ) ) {
+		$columns = [$columns];
+	}
 
 #get column family definition, substitute the target column with itself but indexed.
 
@@ -895,32 +897,28 @@ sub create_index {
 		die 'Cassandra Request Failed ' . $@;
 	}
 
-	my $cdef;
-	if ( @{ $cfdef->{column_metadata} }
-		 and grep { $_->{name} eq $column } @{ $cfdef->{column_metadata} } )
-	{
-		$cdef =
-		  [ grep { $_->{name} eq $column } @{ $cfdef->{column_metadata} } ]
-		  ->[0];
-	} else {
-		$cdef = new Cassandra::ColumnDef(
+	my $newmetadata =
+	  { map { $_->{name} => $_ } @{ $cfdef->{column_metadata} } };
+
+	foreach my $col ( @{$columns} ) {
+		$newmetadata->{$col} =
+		  $newmetadata->{$col} // new Cassandra::ColumnDef(
 			 {
-			   name             => $column,
+			   name             => $col,
 			   validation_class => 'org.apache.cassandra.db.marshal.BytesType',
 			 }
-		);
+		  );
+		$newmetadata->{$col}->{index_type} = 0;
+		$newmetadata->{$col}->{index_name} = $col . "_idx";
 	}
-	$cdef->{index_type} = 0;
-	$cdef->{index_name} = $column . "_idx";
 
-	$cfdef->{column_metadata} =
-	  [ grep { $_->{name} ne $column } @{ $cfdef->{column_metadata} } ];
-	push @{ $cfdef->{column_metadata} }, $cdef;
+	$cfdef->{column_metadata} = [values %$newmetadata];
 
 	#print Dumper $cfdef;
-	eval { $cl->system_update_column_family($cfdef) };
-	if   ($@) { $self->pool->fail($cl) }
+	my $res = eval { $cl->system_update_column_family($cfdef) };
+	if   ($@) { print Dumper $@ ;$self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
+	return $res;
 }
 
 =head2 ring

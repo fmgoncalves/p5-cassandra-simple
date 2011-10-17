@@ -22,7 +22,12 @@ my $present =
 
 unless ($present) {
 	println "Creating $column_family in $keyspace";
-	$conn->create_column_family( $keyspace, $column_family );
+	$conn->create_column_family( $keyspace, $column_family,
+									 {
+									   comparator_type          => 'UTF8Type',
+									   key_validation_class     => 'UTF8Type',
+									   default_validation_class => 'UTF8Type',
+									 } );
 }
 
 $present =
