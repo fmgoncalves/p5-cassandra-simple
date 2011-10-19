@@ -955,7 +955,7 @@ sub create_column_family {
 	$opt->{keyspace} = $keyspace;
 
 	my $cfdef = Cassandra::CfDef->new($opt);
-	print Dumper $cfdef;
+
 	my $cl = $self->pool->get();
 	my $res = $cl->system_add_column_family($cfdef);
 	if   ($@) { $self->pool->fail($cl) }
