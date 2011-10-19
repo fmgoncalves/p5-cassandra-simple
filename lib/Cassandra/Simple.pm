@@ -93,7 +93,6 @@ sub _build_pool {
 
 sub _build_ksdef {
 	my $self = shift;
-	print "CHECKPOINT\n";
 	my $cl = $self->pool->get();
 	my $result = eval { $cl->describe_keyspace( $self->keyspace ) };
 
