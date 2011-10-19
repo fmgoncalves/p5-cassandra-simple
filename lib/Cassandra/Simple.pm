@@ -622,12 +622,13 @@ sub insert {
 	} keys %$columns;
 
 	my $cl = $self->pool->get();
-	eval {
+	my $res = eval {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
 	};
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
+	return $res;
 }
 
 =head2 insert_super
@@ -690,12 +691,13 @@ sub insert_super {
 	} keys %$columns;
 
 	my $cl = $self->pool->get();
-	eval {
+	my $res = eval {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
 	};
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
+	return $res;
 }
 
 =head2 batch_insert
@@ -753,9 +755,10 @@ sub batch_insert {
 		  }
 	} keys %$rows;
 	my $cl = $self->pool->get();
-	eval { $cl->batch_mutate( \%mutation_map, $level ); };
+	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
+	return $res;
 }
 
 =head2 add
@@ -913,9 +916,10 @@ sub remove {
 		return $timestamp;
 	} else {
 		my $cl = $self->pool->get();
-		eval { $cl->truncate($column_family); };
+		my $res = eval { $cl->truncate($column_family); };
 		if   ($@) { $self->pool->fail($cl) }
 		else      { $self->pool->put($cl) }
+		return $res;
 	}
 }
 
@@ -954,9 +958,10 @@ sub create_column_family {
 	my $cfdef = Cassandra::CfDef->new($opt);
 	print Dumper $cfdef;
 	my $cl = $self->pool->get();
-	print Dumper $cl->system_add_column_family($cfdef);
+	my $res = $cl->system_add_column_family($cfdef);
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
+	return $res;
 }
 
 =head2 create_index
