@@ -138,6 +138,25 @@ SYNOPSYS
 
       timestamp, ttl, consistency_level_write
 
+  add
+    Usage: "add($column_family, $key, $column, [$value [, opt]])"
+
+    Increment or decrement counter $column by $value. $value is 1 by
+    default.
+
+    $opt is a *HASH* and can have the following keys:
+
+      super_column, consistency_level_write
+
+  remove_counter
+    Usage: "remove_counter($column_family, $key, $column [, opt])"
+
+    Remove counter $column on $key.
+
+    $opt is a *HASH* and can have the following keys:
+
+      super_column, consistency_level_write
+
   remove
     Usage: "remove($column_family[, $keys][, opt])"
 
