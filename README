@@ -165,13 +165,13 @@ SYNOPSYS
     comparator_type, etc.).
 
   create_index
-    Usage: "create_index($keyspace, $column_family, $column,
+    Usage: "create_index($keyspace, $column_family, $columns,
     [$validation_class])"
 
-    Creates an index on $column of $column_family.
-
-    $validation_class only applies when $column doesn't yet exist, and even
-    then it is optional (defaults to *BytesType*).
+    Creates an index on $columns of $column_family. $columns is an ARRAY of
+    column names to be indexed. $validation_class only applies when $column
+    doesn't yet exist, and even then it is optional (defaults to
+    *BytesType*).
 
   ring
     Usage: "ring($keyspace)"

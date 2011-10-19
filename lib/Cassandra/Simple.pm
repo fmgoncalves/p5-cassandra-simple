@@ -142,12 +142,23 @@ sub _column_or_supercolumn_to_hash {
 	my @result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
 		@result = ( $_->{column}->{name}, $_->{column}->{value} );
-	} elsif ( exists $c_or_sc->{super_column} ) {
+	} elsif ( exists $c_or_sc->{super_column}  and $c_or_sc->{supercolumn} ) {
 		@result = (
 					$c_or_sc->{super_column}->{name},
 					{
 					   map { $_->{name} => $_->{value} }
 						 @{ $c_or_sc->{super_column}->{columns} }
+					}
+		);
+	}elsif ( exists $c_or_sc->{counter_column}  and $c_or_sc->{counter_column} ) {
+		@result = ( $_->{counter_column}->{name}, $_->{counter_column}->{value} );
+	}
+	elsif ( exists $c_or_sc->{counter_super_column}  and $c_or_sc->{counter_super_column} ) {
+		@result = (
+					$c_or_sc->{counter_super_column}->{name},
+					{
+					   map { $_->{name} => $_->{value} }
+						 @{ $c_or_sc->{counter_super_column}->{columns} }
 					}
 		);
 	}
@@ -747,6 +758,91 @@ sub batch_insert {
 	else      { $self->pool->put($cl) }
 }
 
+=head2 add
+
+Usage: C<add($column_family, $key, $column, [$value [, opt]])>
+
+Increment or decrement counter C<$column> by C<$value>. C<$value> is 1 by default.
+
+C<$opt> is a I<HASH> and can have the following keys:
+
+=over 2
+
+super_column, consistency_level_write
+
+=back
+
+=cut
+
+sub add {
+	my $self = shift;
+
+	my $column_family = shift;
+	my $key           = shift;
+	my $column        = shift;
+	my $value         = shift || 1;
+	my $opt           = shift || {};
+
+	my $level = $self->_consistency_level_write($opt);
+	my $columnParent =
+	  Cassandra::ColumnParent->new(
+							   {
+								 column_family => $column_family,
+								 super_column  => $opt->{super_column} // undef,
+							   }
+	  );
+	my $col =
+	  Cassandra::CounterColumn->new( { name => $column, value => $value } );
+
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->add( $key, $columnParent, $col, $level ) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
+	return $res;
+}
+
+=head2 remove_counter
+
+Usage: C<remove_counter($column_family, $key, $column [, opt])>
+
+Remove counter C<$column> on C<$key>.
+
+C<$opt> is a I<HASH> and can have the following keys:
+
+=over 2
+
+super_column, consistency_level_write
+
+=back
+
+=cut
+
+sub remove_counter {
+	my $self = shift;
+
+	my $column_family = shift;
+	my $key           = shift;
+	my $column        = shift;
+	my $opt           = shift || {};
+
+	my $level = $self->_consistency_level_write($opt);
+
+	my $columnPath =
+	  new Cassandra::ColumnPath(
+							   {
+								 column_family => $column_family,
+								 super_column  => $opt->{super_column} // undef,
+								 column        => $column
+							   }
+	  );
+
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->remove_counter( $key, $columnPath, $level ) };
+	if   ($@) { $self->pool->fail($cl) }
+	else      { $self->pool->put($cl) }
+	return $res;
+}
+
 =head2 remove
 
 Usage: C<< remove($column_family[, $keys][, opt]) >>
@@ -879,6 +975,7 @@ sub create_index {
 	my $keyspace      = shift;
 	my $column_family = shift;
 	my $columns       = shift;
+	my $validation_class = shift || 'org.apache.cassandra.db.marshal.BytesType';
 
 	if ( !UNIVERSAL::isa( $columns, 'ARRAY' ) ) {
 		$columns = [$columns];
@@ -905,19 +1002,19 @@ sub create_index {
 		  $newmetadata->{$col} // new Cassandra::ColumnDef(
 			 {
 			   name             => $col,
-			   validation_class => 'org.apache.cassandra.db.marshal.BytesType',
+			   validation_class => $validation_class,
 			 }
 		  );
 		$newmetadata->{$col}->{index_type} = 0;
 		$newmetadata->{$col}->{index_name} = $col . "_idx";
 	}
 
-	$cfdef->{column_metadata} = [values %$newmetadata];
+	$cfdef->{column_metadata} = [ values %$newmetadata ];
 
 	#print Dumper $cfdef;
 	my $res = eval { $cl->system_update_column_family($cfdef) };
-	if   ($@) { print Dumper $@ ;$self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
