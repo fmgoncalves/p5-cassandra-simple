@@ -92,8 +92,8 @@ sub _build_pool {
 }
 
 sub _build_ksdef {
-	my $self = shift;
-	my $cl = $self->pool->get();
+	my $self   = shift;
+	my $cl     = $self->pool->get();
 	my $result = eval { $cl->describe_keyspace( $self->keyspace ) };
 
 	if   ($@) { $self->pool->fail($cl) }
@@ -141,7 +141,7 @@ sub _column_or_supercolumn_to_hash {
 	my @result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
 		@result = ( $_->{column}->{name}, $_->{column}->{value} );
-	} elsif ( exists $c_or_sc->{super_column}  and $c_or_sc->{supercolumn} ) {
+	} elsif ( exists $c_or_sc->{super_column} and $c_or_sc->{super_column} ) {
 		@result = (
 					$c_or_sc->{super_column}->{name},
 					{
@@ -149,10 +149,13 @@ sub _column_or_supercolumn_to_hash {
 						 @{ $c_or_sc->{super_column}->{columns} }
 					}
 		);
-	}elsif ( exists $c_or_sc->{counter_column}  and $c_or_sc->{counter_column} ) {
-		@result = ( $_->{counter_column}->{name}, $_->{counter_column}->{value} );
-	}
-	elsif ( exists $c_or_sc->{counter_super_column}  and $c_or_sc->{counter_super_column} ) {
+	} elsif ( exists $c_or_sc->{counter_column} and $c_or_sc->{counter_column} )
+	{
+		@result =
+		  ( $_->{counter_column}->{name}, $_->{counter_column}->{value} );
+	} elsif ( exists $c_or_sc->{counter_super_column}
+			  and $c_or_sc->{counter_super_column} )
+	{
 		@result = (
 					$c_or_sc->{counter_super_column}->{name},
 					{
@@ -620,7 +623,7 @@ sub insert {
 		  )
 	} keys %$columns;
 
-	my $cl = $self->pool->get();
+	my $cl  = $self->pool->get();
 	my $res = eval {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
@@ -689,7 +692,7 @@ sub insert_super {
 		  )
 	} keys %$columns;
 
-	my $cl = $self->pool->get();
+	my $cl  = $self->pool->get();
 	my $res = eval {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
@@ -797,7 +800,7 @@ sub add {
 	  Cassandra::CounterColumn->new( { name => $column, value => $value } );
 
 	my $cl = $self->pool->get();
-	my $res = eval { $cl->add( $key, $columnParent, $col, $level ) };
+	my $res = eval { $cl->add( $key, $columnParent, $col, $level ); 1 };
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
 	return $res;
@@ -956,7 +959,7 @@ sub create_column_family {
 
 	my $cfdef = Cassandra::CfDef->new($opt);
 
-	my $cl = $self->pool->get();
+	my $cl  = $self->pool->get();
 	my $res = $cl->system_add_column_family($cfdef);
 	if   ($@) { $self->pool->fail($cl) }
 	else      { $self->pool->put($cl) }
@@ -977,9 +980,9 @@ C<$validation_class> only applies when C<$column> doesn't yet exist, and even th
 sub create_index {
 	my $self = shift;
 
-	my $keyspace      = shift;
-	my $column_family = shift;
-	my $columns       = shift;
+	my $keyspace         = shift;
+	my $column_family    = shift;
+	my $columns          = shift;
 	my $validation_class = shift || 'org.apache.cassandra.db.marshal.BytesType';
 
 	if ( !UNIVERSAL::isa( $columns, 'ARRAY' ) ) {
@@ -1005,10 +1008,10 @@ sub create_index {
 	foreach my $col ( @{$columns} ) {
 		$newmetadata->{$col} =
 		  $newmetadata->{$col} // new Cassandra::ColumnDef(
-			 {
-			   name             => $col,
-			   validation_class => $validation_class,
-			 }
+									   {
+										 name             => $col,
+										 validation_class => $validation_class,
+									   }
 		  );
 		$newmetadata->{$col}->{index_type} = 0;
 		$newmetadata->{$col}->{index_name} = $col . "_idx";
