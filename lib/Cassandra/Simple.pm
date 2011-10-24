@@ -96,8 +96,8 @@ sub _build_ksdef {
 	my $cl     = $self->pool->get();
 	my $result = eval { $cl->describe_keyspace( $self->keyspace ) };
 
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	return {
 		map {
@@ -165,6 +165,16 @@ sub _column_or_supercolumn_to_hash {
 		);
 	}
 	return \@result;
+
+}
+
+sub _wait_for_agreement {
+	my $self = shift;
+	my $cl   = $self->pool->get();
+
+	while ( 1 != scalar keys %{ $cl->describe_schema_versions() } ) {
+		sleep 0.25;
+	}
 
 }
 
@@ -276,8 +286,8 @@ sub multiget {
 	my $cl = $self->pool->get();
 	my $result =
 	  eval { $cl->multiget_slice( $keys, $columnParent, $predicate, $level ) };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	my %result_columns = map {
 		$_ => {
@@ -346,8 +356,8 @@ sub get_count {
 	my $result =
 	  eval { $cl->get_count( $key, $columnParent, $predicate, $level ) };
 
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $result;
 }
 
@@ -394,8 +404,8 @@ sub multiget_count {
 	my $result =
 	  eval { $cl->multiget_count( $keys, $columnParent, $predicate, $level ) };
 
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $result;
 }
 
@@ -460,8 +470,8 @@ sub get_range {
 		$cl->get_range_slices( $columnParent, $predicate, $keyRange, $level );
 	};
 
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	my %result_columns = map {
 		$_->{key} => {
@@ -558,8 +568,8 @@ sub get_indexed_slices {
 		$cl->get_indexed_slices( $columnParent, $index_clause_thrift,
 								 $predicate, $level );
 	};
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	my %result_keys = map {
 		$_->{key} => {
@@ -628,8 +638,8 @@ sub insert {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
 	};
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
@@ -697,8 +707,8 @@ sub insert_super {
 		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
 						   $level );
 	};
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
@@ -758,8 +768,8 @@ sub batch_insert {
 	} keys %$rows;
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
@@ -801,8 +811,8 @@ sub add {
 
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->add( $key, $columnParent, $col, $level ); 1 };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
@@ -843,8 +853,8 @@ sub remove_counter {
 
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->remove_counter( $key, $columnPath, $level ) };
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	return $res;
 }
 
@@ -912,15 +922,15 @@ sub remove {
 		} @{$keys};
 		my $cl = $self->pool->get();
 		eval { $cl->batch_mutate( \%mutation_map, $level ); };
-		if   ($@) { $self->pool->fail($cl) }
-		else      { $self->pool->put($cl) }
+		if ($@) { print Dumper $@; $self->pool->fail($cl) }
+		else    { $self->pool->put($cl) }
 
 		return $timestamp;
 	} else {
 		my $cl = $self->pool->get();
 		my $res = eval { $cl->truncate($column_family); };
-		if   ($@) { $self->pool->fail($cl) }
-		else      { $self->pool->put($cl) }
+		if ($@) { print Dumper $@; $self->pool->fail($cl) }
+		else    { $self->pool->put($cl) }
 		return $res;
 	}
 }
@@ -959,10 +969,11 @@ sub create_column_family {
 
 	my $cfdef = Cassandra::CfDef->new($opt);
 
-	my $cl  = $self->pool->get();
-	my $res = $cl->system_add_column_family($cfdef);
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->system_add_column_family($cfdef) };
+	$self->_wait_for_agreement();
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 	$self->clear_ksdef();
 	return $res;
 }
@@ -1021,6 +1032,7 @@ sub create_index {
 
 	#print Dumper $cfdef;
 	my $res = eval { $cl->system_update_column_family($cfdef) };
+	$self->_wait_for_agreement();
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 	return $res;
@@ -1044,8 +1056,8 @@ sub ring {
 	my @result = eval {
 		map { $_->{endpoints}->[0] } @{ $cl->describe_ring($keyspace) };
 	};
-	if   ($@) { $self->pool->fail($cl) }
-	else      { $self->pool->put($cl) }
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
 
 	return \@result;
 }
