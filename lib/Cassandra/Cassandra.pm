@@ -672,16 +672,16 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size140 = 0;
+          my $_size147 = 0;
           $self->{success} = [];
-          my $_etype143 = 0;
-          $xfer += $input->readListBegin(\$_etype143, \$_size140);
-          for (my $_i144 = 0; $_i144 < $_size140; ++$_i144)
+          my $_etype150 = 0;
+          $xfer += $input->readListBegin(\$_etype150, \$_size147);
+          for (my $_i151 = 0; $_i151 < $_size147; ++$_i151)
           {
-            my $elem145 = undef;
-            $elem145 = new Cassandra::ColumnOrSuperColumn();
-            $xfer += $elem145->read($input);
-            push(@{$self->{success}},$elem145);
+            my $elem152 = undef;
+            $elem152 = new Cassandra::ColumnOrSuperColumn();
+            $xfer += $elem152->read($input);
+            push(@{$self->{success}},$elem152);
           }
           $xfer += $input->readListEnd();
         }
@@ -727,9 +727,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter146 (@{$self->{success}}) 
+        foreach my $iter153 (@{$self->{success}}) 
         {
-          $xfer += ${iter146}->write($output);
+          $xfer += ${iter153}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -1029,15 +1029,15 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size147 = 0;
+          my $_size154 = 0;
           $self->{keys} = [];
-          my $_etype150 = 0;
-          $xfer += $input->readListBegin(\$_etype150, \$_size147);
-          for (my $_i151 = 0; $_i151 < $_size147; ++$_i151)
+          my $_etype157 = 0;
+          $xfer += $input->readListBegin(\$_etype157, \$_size154);
+          for (my $_i158 = 0; $_i158 < $_size154; ++$_i158)
           {
-            my $elem152 = undef;
-            $xfer += $input->readString(\$elem152);
-            push(@{$self->{keys}},$elem152);
+            my $elem159 = undef;
+            $xfer += $input->readString(\$elem159);
+            push(@{$self->{keys}},$elem159);
           }
           $xfer += $input->readListEnd();
         }
@@ -1082,9 +1082,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRING, scalar(@{$self->{keys}}));
       {
-        foreach my $iter153 (@{$self->{keys}}) 
+        foreach my $iter160 (@{$self->{keys}}) 
         {
-          $xfer += $output->writeString($iter153);
+          $xfer += $output->writeString($iter160);
         }
       }
       $xfer += $output->writeListEnd();
@@ -1161,31 +1161,31 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size154 = 0;
+          my $_size161 = 0;
           $self->{success} = {};
-          my $_ktype155 = 0;
-          my $_vtype156 = 0;
-          $xfer += $input->readMapBegin(\$_ktype155, \$_vtype156, \$_size154);
-          for (my $_i158 = 0; $_i158 < $_size154; ++$_i158)
+          my $_ktype162 = 0;
+          my $_vtype163 = 0;
+          $xfer += $input->readMapBegin(\$_ktype162, \$_vtype163, \$_size161);
+          for (my $_i165 = 0; $_i165 < $_size161; ++$_i165)
           {
-            my $key159 = '';
-            my $val160 = [];
-            $xfer += $input->readString(\$key159);
+            my $key166 = '';
+            my $val167 = [];
+            $xfer += $input->readString(\$key166);
             {
-              my $_size161 = 0;
-              $val160 = [];
-              my $_etype164 = 0;
-              $xfer += $input->readListBegin(\$_etype164, \$_size161);
-              for (my $_i165 = 0; $_i165 < $_size161; ++$_i165)
+              my $_size168 = 0;
+              $val167 = [];
+              my $_etype171 = 0;
+              $xfer += $input->readListBegin(\$_etype171, \$_size168);
+              for (my $_i172 = 0; $_i172 < $_size168; ++$_i172)
               {
-                my $elem166 = undef;
-                $elem166 = new Cassandra::ColumnOrSuperColumn();
-                $xfer += $elem166->read($input);
-                push(@{$val160},$elem166);
+                my $elem173 = undef;
+                $elem173 = new Cassandra::ColumnOrSuperColumn();
+                $xfer += $elem173->read($input);
+                push(@{$val167},$elem173);
               }
               $xfer += $input->readListEnd();
             }
-            $self->{success}->{$key159} = $val160;
+            $self->{success}->{$key166} = $val167;
           }
           $xfer += $input->readMapEnd();
         }
@@ -1231,15 +1231,15 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{$self->{success}}));
       {
-        while( my ($kiter167,$viter168) = each %{$self->{success}}) 
+        while( my ($kiter174,$viter175) = each %{$self->{success}}) 
         {
-          $xfer += $output->writeString($kiter167);
+          $xfer += $output->writeString($kiter174);
           {
-            $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{${viter168}}));
+            $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{${viter175}}));
             {
-              foreach my $iter169 (@{${viter168}}) 
+              foreach my $iter176 (@{${viter175}}) 
               {
-                $xfer += ${iter169}->write($output);
+                $xfer += ${iter176}->write($output);
               }
             }
             $xfer += $output->writeListEnd();
@@ -1320,15 +1320,15 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size170 = 0;
+          my $_size177 = 0;
           $self->{keys} = [];
-          my $_etype173 = 0;
-          $xfer += $input->readListBegin(\$_etype173, \$_size170);
-          for (my $_i174 = 0; $_i174 < $_size170; ++$_i174)
+          my $_etype180 = 0;
+          $xfer += $input->readListBegin(\$_etype180, \$_size177);
+          for (my $_i181 = 0; $_i181 < $_size177; ++$_i181)
           {
-            my $elem175 = undef;
-            $xfer += $input->readString(\$elem175);
-            push(@{$self->{keys}},$elem175);
+            my $elem182 = undef;
+            $xfer += $input->readString(\$elem182);
+            push(@{$self->{keys}},$elem182);
           }
           $xfer += $input->readListEnd();
         }
@@ -1373,9 +1373,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRING, scalar(@{$self->{keys}}));
       {
-        foreach my $iter176 (@{$self->{keys}}) 
+        foreach my $iter183 (@{$self->{keys}}) 
         {
-          $xfer += $output->writeString($iter176);
+          $xfer += $output->writeString($iter183);
         }
       }
       $xfer += $output->writeListEnd();
@@ -1452,18 +1452,18 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size177 = 0;
+          my $_size184 = 0;
           $self->{success} = {};
-          my $_ktype178 = 0;
-          my $_vtype179 = 0;
-          $xfer += $input->readMapBegin(\$_ktype178, \$_vtype179, \$_size177);
-          for (my $_i181 = 0; $_i181 < $_size177; ++$_i181)
+          my $_ktype185 = 0;
+          my $_vtype186 = 0;
+          $xfer += $input->readMapBegin(\$_ktype185, \$_vtype186, \$_size184);
+          for (my $_i188 = 0; $_i188 < $_size184; ++$_i188)
           {
-            my $key182 = '';
-            my $val183 = 0;
-            $xfer += $input->readString(\$key182);
-            $xfer += $input->readI32(\$val183);
-            $self->{success}->{$key182} = $val183;
+            my $key189 = '';
+            my $val190 = 0;
+            $xfer += $input->readString(\$key189);
+            $xfer += $input->readI32(\$val190);
+            $self->{success}->{$key189} = $val190;
           }
           $xfer += $input->readMapEnd();
         }
@@ -1509,10 +1509,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::I32, scalar(keys %{$self->{success}}));
       {
-        while( my ($kiter184,$viter185) = each %{$self->{success}}) 
+        while( my ($kiter191,$viter192) = each %{$self->{success}}) 
         {
-          $xfer += $output->writeString($kiter184);
-          $xfer += $output->writeI32($viter185);
+          $xfer += $output->writeString($kiter191);
+          $xfer += $output->writeI32($viter192);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -1701,16 +1701,16 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size186 = 0;
+          my $_size193 = 0;
           $self->{success} = [];
-          my $_etype189 = 0;
-          $xfer += $input->readListBegin(\$_etype189, \$_size186);
-          for (my $_i190 = 0; $_i190 < $_size186; ++$_i190)
+          my $_etype196 = 0;
+          $xfer += $input->readListBegin(\$_etype196, \$_size193);
+          for (my $_i197 = 0; $_i197 < $_size193; ++$_i197)
           {
-            my $elem191 = undef;
-            $elem191 = new Cassandra::KeySlice();
-            $xfer += $elem191->read($input);
-            push(@{$self->{success}},$elem191);
+            my $elem198 = undef;
+            $elem198 = new Cassandra::KeySlice();
+            $xfer += $elem198->read($input);
+            push(@{$self->{success}},$elem198);
           }
           $xfer += $input->readListEnd();
         }
@@ -1756,9 +1756,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter192 (@{$self->{success}}) 
+        foreach my $iter199 (@{$self->{success}}) 
         {
-          $xfer += ${iter192}->write($output);
+          $xfer += ${iter199}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -1947,16 +1947,16 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size193 = 0;
+          my $_size200 = 0;
           $self->{success} = [];
-          my $_etype196 = 0;
-          $xfer += $input->readListBegin(\$_etype196, \$_size193);
-          for (my $_i197 = 0; $_i197 < $_size193; ++$_i197)
+          my $_etype203 = 0;
+          $xfer += $input->readListBegin(\$_etype203, \$_size200);
+          for (my $_i204 = 0; $_i204 < $_size200; ++$_i204)
           {
-            my $elem198 = undef;
-            $elem198 = new Cassandra::KeySlice();
-            $xfer += $elem198->read($input);
-            push(@{$self->{success}},$elem198);
+            my $elem205 = undef;
+            $elem205 = new Cassandra::KeySlice();
+            $xfer += $elem205->read($input);
+            push(@{$self->{success}},$elem205);
           }
           $xfer += $input->readListEnd();
         }
@@ -2002,9 +2002,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter199 (@{$self->{success}}) 
+        foreach my $iter206 (@{$self->{success}}) 
         {
-          $xfer += ${iter199}->write($output);
+          $xfer += ${iter206}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -2888,46 +2888,46 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size200 = 0;
+          my $_size207 = 0;
           $self->{mutation_map} = {};
-          my $_ktype201 = 0;
-          my $_vtype202 = 0;
-          $xfer += $input->readMapBegin(\$_ktype201, \$_vtype202, \$_size200);
-          for (my $_i204 = 0; $_i204 < $_size200; ++$_i204)
+          my $_ktype208 = 0;
+          my $_vtype209 = 0;
+          $xfer += $input->readMapBegin(\$_ktype208, \$_vtype209, \$_size207);
+          for (my $_i211 = 0; $_i211 < $_size207; ++$_i211)
           {
-            my $key205 = '';
-            my $val206 = [];
-            $xfer += $input->readString(\$key205);
+            my $key212 = '';
+            my $val213 = [];
+            $xfer += $input->readString(\$key212);
             {
-              my $_size207 = 0;
-              $val206 = {};
-              my $_ktype208 = 0;
-              my $_vtype209 = 0;
-              $xfer += $input->readMapBegin(\$_ktype208, \$_vtype209, \$_size207);
-              for (my $_i211 = 0; $_i211 < $_size207; ++$_i211)
+              my $_size214 = 0;
+              $val213 = {};
+              my $_ktype215 = 0;
+              my $_vtype216 = 0;
+              $xfer += $input->readMapBegin(\$_ktype215, \$_vtype216, \$_size214);
+              for (my $_i218 = 0; $_i218 < $_size214; ++$_i218)
               {
-                my $key212 = '';
-                my $val213 = [];
-                $xfer += $input->readString(\$key212);
+                my $key219 = '';
+                my $val220 = [];
+                $xfer += $input->readString(\$key219);
                 {
-                  my $_size214 = 0;
-                  $val213 = [];
-                  my $_etype217 = 0;
-                  $xfer += $input->readListBegin(\$_etype217, \$_size214);
-                  for (my $_i218 = 0; $_i218 < $_size214; ++$_i218)
+                  my $_size221 = 0;
+                  $val220 = [];
+                  my $_etype224 = 0;
+                  $xfer += $input->readListBegin(\$_etype224, \$_size221);
+                  for (my $_i225 = 0; $_i225 < $_size221; ++$_i225)
                   {
-                    my $elem219 = undef;
-                    $elem219 = new Cassandra::Mutation();
-                    $xfer += $elem219->read($input);
-                    push(@{$val213},$elem219);
+                    my $elem226 = undef;
+                    $elem226 = new Cassandra::Mutation();
+                    $xfer += $elem226->read($input);
+                    push(@{$val220},$elem226);
                   }
                   $xfer += $input->readListEnd();
                 }
-                $val206->{$key212} = $val213;
+                $val213->{$key219} = $val220;
               }
               $xfer += $input->readMapEnd();
             }
-            $self->{mutation_map}->{$key205} = $val206;
+            $self->{mutation_map}->{$key212} = $val213;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2958,21 +2958,21 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::MAP, scalar(keys %{$self->{mutation_map}}));
       {
-        while( my ($kiter220,$viter221) = each %{$self->{mutation_map}}) 
+        while( my ($kiter227,$viter228) = each %{$self->{mutation_map}}) 
         {
-          $xfer += $output->writeString($kiter220);
+          $xfer += $output->writeString($kiter227);
           {
-            $xfer += $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{${viter221}}));
+            $xfer += $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{${viter228}}));
             {
-              while( my ($kiter222,$viter223) = each %{${viter221}}) 
+              while( my ($kiter229,$viter230) = each %{${viter228}}) 
               {
-                $xfer += $output->writeString($kiter222);
+                $xfer += $output->writeString($kiter229);
                 {
-                  $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{${viter223}}));
+                  $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{${viter230}}));
                   {
-                    foreach my $iter224 (@{${viter223}}) 
+                    foreach my $iter231 (@{${viter230}}) 
                     {
-                      $xfer += ${iter224}->write($output);
+                      $xfer += ${iter231}->write($output);
                     }
                   }
                   $xfer += $output->writeListEnd();
@@ -3327,30 +3327,30 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size225 = 0;
+          my $_size232 = 0;
           $self->{success} = {};
-          my $_ktype226 = 0;
-          my $_vtype227 = 0;
-          $xfer += $input->readMapBegin(\$_ktype226, \$_vtype227, \$_size225);
-          for (my $_i229 = 0; $_i229 < $_size225; ++$_i229)
+          my $_ktype233 = 0;
+          my $_vtype234 = 0;
+          $xfer += $input->readMapBegin(\$_ktype233, \$_vtype234, \$_size232);
+          for (my $_i236 = 0; $_i236 < $_size232; ++$_i236)
           {
-            my $key230 = '';
-            my $val231 = [];
-            $xfer += $input->readString(\$key230);
+            my $key237 = '';
+            my $val238 = [];
+            $xfer += $input->readString(\$key237);
             {
-              my $_size232 = 0;
-              $val231 = [];
-              my $_etype235 = 0;
-              $xfer += $input->readListBegin(\$_etype235, \$_size232);
-              for (my $_i236 = 0; $_i236 < $_size232; ++$_i236)
+              my $_size239 = 0;
+              $val238 = [];
+              my $_etype242 = 0;
+              $xfer += $input->readListBegin(\$_etype242, \$_size239);
+              for (my $_i243 = 0; $_i243 < $_size239; ++$_i243)
               {
-                my $elem237 = undef;
-                $xfer += $input->readString(\$elem237);
-                push(@{$val231},$elem237);
+                my $elem244 = undef;
+                $xfer += $input->readString(\$elem244);
+                push(@{$val238},$elem244);
               }
               $xfer += $input->readListEnd();
             }
-            $self->{success}->{$key230} = $val231;
+            $self->{success}->{$key237} = $val238;
           }
           $xfer += $input->readMapEnd();
         }
@@ -3382,15 +3382,15 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{$self->{success}}));
       {
-        while( my ($kiter238,$viter239) = each %{$self->{success}}) 
+        while( my ($kiter245,$viter246) = each %{$self->{success}}) 
         {
-          $xfer += $output->writeString($kiter238);
+          $xfer += $output->writeString($kiter245);
           {
-            $xfer += $output->writeListBegin(TType::STRING, scalar(@{${viter239}}));
+            $xfer += $output->writeListBegin(TType::STRING, scalar(@{${viter246}}));
             {
-              foreach my $iter240 (@{${viter239}}) 
+              foreach my $iter247 (@{${viter246}}) 
               {
-                $xfer += $output->writeString($iter240);
+                $xfer += $output->writeString($iter247);
               }
             }
             $xfer += $output->writeListEnd();
@@ -3499,16 +3499,16 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size241 = 0;
+          my $_size248 = 0;
           $self->{success} = [];
-          my $_etype244 = 0;
-          $xfer += $input->readListBegin(\$_etype244, \$_size241);
-          for (my $_i245 = 0; $_i245 < $_size241; ++$_i245)
+          my $_etype251 = 0;
+          $xfer += $input->readListBegin(\$_etype251, \$_size248);
+          for (my $_i252 = 0; $_i252 < $_size248; ++$_i252)
           {
-            my $elem246 = undef;
-            $elem246 = new Cassandra::KsDef();
-            $xfer += $elem246->read($input);
-            push(@{$self->{success}},$elem246);
+            my $elem253 = undef;
+            $elem253 = new Cassandra::KsDef();
+            $xfer += $elem253->read($input);
+            push(@{$self->{success}},$elem253);
           }
           $xfer += $input->readListEnd();
         }
@@ -3540,9 +3540,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter247 (@{$self->{success}}) 
+        foreach my $iter254 (@{$self->{success}}) 
         {
-          $xfer += ${iter247}->write($output);
+          $xfer += ${iter254}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -3885,16 +3885,16 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size248 = 0;
+          my $_size255 = 0;
           $self->{success} = [];
-          my $_etype251 = 0;
-          $xfer += $input->readListBegin(\$_etype251, \$_size248);
-          for (my $_i252 = 0; $_i252 < $_size248; ++$_i252)
+          my $_etype258 = 0;
+          $xfer += $input->readListBegin(\$_etype258, \$_size255);
+          for (my $_i259 = 0; $_i259 < $_size255; ++$_i259)
           {
-            my $elem253 = undef;
-            $elem253 = new Cassandra::TokenRange();
-            $xfer += $elem253->read($input);
-            push(@{$self->{success}},$elem253);
+            my $elem260 = undef;
+            $elem260 = new Cassandra::TokenRange();
+            $xfer += $elem260->read($input);
+            push(@{$self->{success}},$elem260);
           }
           $xfer += $input->readListEnd();
         }
@@ -3926,9 +3926,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter254 (@{$self->{success}}) 
+        foreach my $iter261 (@{$self->{success}}) 
         {
-          $xfer += ${iter254}->write($output);
+          $xfer += ${iter261}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -4477,15 +4477,15 @@ sub read {
     {
       /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size255 = 0;
+          my $_size262 = 0;
           $self->{success} = [];
-          my $_etype258 = 0;
-          $xfer += $input->readListBegin(\$_etype258, \$_size255);
-          for (my $_i259 = 0; $_i259 < $_size255; ++$_i259)
+          my $_etype265 = 0;
+          $xfer += $input->readListBegin(\$_etype265, \$_size262);
+          for (my $_i266 = 0; $_i266 < $_size262; ++$_i266)
           {
-            my $elem260 = undef;
-            $xfer += $input->readString(\$elem260);
-            push(@{$self->{success}},$elem260);
+            my $elem267 = undef;
+            $xfer += $input->readString(\$elem267);
+            push(@{$self->{success}},$elem267);
           }
           $xfer += $input->readListEnd();
         }
@@ -4517,9 +4517,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRING, scalar(@{$self->{success}}));
       {
-        foreach my $iter261 (@{$self->{success}}) 
+        foreach my $iter268 (@{$self->{success}}) 
         {
-          $xfer += $output->writeString($iter261);
+          $xfer += $output->writeString($iter268);
         }
       }
       $xfer += $output->writeListEnd();
@@ -6264,17 +6264,17 @@ sub recv_login{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_login_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{authnx}) {
-    die $result->{authnx}->why;
+    die $result->{authnx};
   }
   if (defined $result->{authzx}) {
-    die $result->{authzx}->why;
+    die $result->{authzx};
   }
   return;
 }
@@ -6310,14 +6310,14 @@ sub recv_set_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_set_keyspace_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   return;
 }
@@ -6359,7 +6359,7 @@ sub recv_get{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_get_result();
   $result->read($self->{input});
@@ -6369,16 +6369,16 @@ sub recv_get{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{nfe}) {
-    die $result->{nfe}->why;
+    die $result->{nfe};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "get failed: unknown result";
 }
@@ -6423,7 +6423,7 @@ sub recv_get_slice{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_get_slice_result();
   $result->read($self->{input});
@@ -6433,13 +6433,13 @@ sub recv_get_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "get_slice failed: unknown result";
 }
@@ -6484,7 +6484,7 @@ sub recv_get_count{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_get_count_result();
   $result->read($self->{input});
@@ -6494,13 +6494,13 @@ sub recv_get_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "get_count failed: unknown result";
 }
@@ -6545,7 +6545,7 @@ sub recv_multiget_slice{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_multiget_slice_result();
   $result->read($self->{input});
@@ -6555,13 +6555,13 @@ sub recv_multiget_slice{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "multiget_slice failed: unknown result";
 }
@@ -6606,7 +6606,7 @@ sub recv_multiget_count{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_multiget_count_result();
   $result->read($self->{input});
@@ -6616,13 +6616,13 @@ sub recv_multiget_count{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "multiget_count failed: unknown result";
 }
@@ -6667,7 +6667,7 @@ sub recv_get_range_slices{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_get_range_slices_result();
   $result->read($self->{input});
@@ -6677,13 +6677,13 @@ sub recv_get_range_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "get_range_slices failed: unknown result";
 }
@@ -6728,7 +6728,7 @@ sub recv_get_indexed_slices{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_get_indexed_slices_result();
   $result->read($self->{input});
@@ -6738,13 +6738,13 @@ sub recv_get_indexed_slices{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   die "get_indexed_slices failed: unknown result";
 }
@@ -6789,20 +6789,20 @@ sub recv_insert{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_insert_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   return;
 }
@@ -6847,20 +6847,20 @@ sub recv_add{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_add_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   return;
 }
@@ -6905,20 +6905,20 @@ sub recv_remove{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_remove_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   return;
 }
@@ -6960,20 +6960,20 @@ sub recv_remove_counter{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_remove_counter_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   return;
 }
@@ -7012,20 +7012,20 @@ sub recv_batch_mutate{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_batch_mutate_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   return;
 }
@@ -7061,17 +7061,17 @@ sub recv_truncate{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_truncate_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   return;
 }
@@ -7104,7 +7104,7 @@ sub recv_describe_schema_versions{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_schema_versions_result();
   $result->read($self->{input});
@@ -7114,7 +7114,7 @@ sub recv_describe_schema_versions{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   die "describe_schema_versions failed: unknown result";
 }
@@ -7147,7 +7147,7 @@ sub recv_describe_keyspaces{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_keyspaces_result();
   $result->read($self->{input});
@@ -7157,7 +7157,7 @@ sub recv_describe_keyspaces{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   die "describe_keyspaces failed: unknown result";
 }
@@ -7190,7 +7190,7 @@ sub recv_describe_cluster_name{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_cluster_name_result();
   $result->read($self->{input});
@@ -7230,7 +7230,7 @@ sub recv_describe_version{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_version_result();
   $result->read($self->{input});
@@ -7273,7 +7273,7 @@ sub recv_describe_ring{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_ring_result();
   $result->read($self->{input});
@@ -7283,7 +7283,7 @@ sub recv_describe_ring{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   die "describe_ring failed: unknown result";
 }
@@ -7316,7 +7316,7 @@ sub recv_describe_partitioner{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_partitioner_result();
   $result->read($self->{input});
@@ -7356,7 +7356,7 @@ sub recv_describe_snitch{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_snitch_result();
   $result->read($self->{input});
@@ -7399,7 +7399,7 @@ sub recv_describe_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_keyspace_result();
   $result->read($self->{input});
@@ -7409,10 +7409,10 @@ sub recv_describe_keyspace{
     return $result->{success};
   }
   if (defined $result->{nfe}) {
-    die $result->{nfe}->why;
+    die $result->{nfe};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   die "describe_keyspace failed: unknown result";
 }
@@ -7457,7 +7457,7 @@ sub recv_describe_splits{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_describe_splits_result();
   $result->read($self->{input});
@@ -7467,7 +7467,7 @@ sub recv_describe_splits{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   die "describe_splits failed: unknown result";
 }
@@ -7503,7 +7503,7 @@ sub recv_system_add_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_add_column_family_result();
   $result->read($self->{input});
@@ -7513,10 +7513,10 @@ sub recv_system_add_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_add_column_family failed: unknown result";
 }
@@ -7552,7 +7552,7 @@ sub recv_system_drop_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_drop_column_family_result();
   $result->read($self->{input});
@@ -7562,10 +7562,10 @@ sub recv_system_drop_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_drop_column_family failed: unknown result";
 }
@@ -7601,7 +7601,7 @@ sub recv_system_add_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_add_keyspace_result();
   $result->read($self->{input});
@@ -7611,10 +7611,10 @@ sub recv_system_add_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_add_keyspace failed: unknown result";
 }
@@ -7650,7 +7650,7 @@ sub recv_system_drop_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_drop_keyspace_result();
   $result->read($self->{input});
@@ -7660,10 +7660,10 @@ sub recv_system_drop_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_drop_keyspace failed: unknown result";
 }
@@ -7699,7 +7699,7 @@ sub recv_system_update_keyspace{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_update_keyspace_result();
   $result->read($self->{input});
@@ -7709,10 +7709,10 @@ sub recv_system_update_keyspace{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_update_keyspace failed: unknown result";
 }
@@ -7748,7 +7748,7 @@ sub recv_system_update_column_family{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_system_update_column_family_result();
   $result->read($self->{input});
@@ -7758,10 +7758,10 @@ sub recv_system_update_column_family{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "system_update_column_family failed: unknown result";
 }
@@ -7800,7 +7800,7 @@ sub recv_execute_cql_query{
     my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
-    die $x->getMessage();
+    die $x;
   }
   my $result = new Cassandra::Cassandra_execute_cql_query_result();
   $result->read($self->{input});
@@ -7810,16 +7810,16 @@ sub recv_execute_cql_query{
     return $result->{success};
   }
   if (defined $result->{ire}) {
-    die $result->{ire}->why;
+    die $result->{ire};
   }
   if (defined $result->{ue}) {
-    die $result->{ue}->why;
+    die $result->{ue};
   }
   if (defined $result->{te}) {
-    die $result->{te}->why;
+    die $result->{te};
   }
   if (defined $result->{sde}) {
-    die $result->{sde}->why;
+    die $result->{sde};
   }
   die "execute_cql_query failed: unknown result";
 }

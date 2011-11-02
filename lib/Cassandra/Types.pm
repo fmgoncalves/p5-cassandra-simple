@@ -1992,9 +1992,88 @@ sub write {
   return $xfer;
 }
 
+package Cassandra::EndpointDetails;
+use base qw(Class::Accessor);
+Cassandra::EndpointDetails->mk_accessors( qw( host datacenter ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{host} = undef;
+  $self->{datacenter} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{host}) {
+      $self->{host} = $vals->{host};
+    }
+    if (defined $vals->{datacenter}) {
+      $self->{datacenter} = $vals->{datacenter};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'EndpointDetails';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{host});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{datacenter});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('EndpointDetails');
+  if (defined $self->{host}) {
+    $xfer += $output->writeFieldBegin('host', TType::STRING, 1);
+    $xfer += $output->writeString($self->{host});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{datacenter}) {
+    $xfer += $output->writeFieldBegin('datacenter', TType::STRING, 2);
+    $xfer += $output->writeString($self->{datacenter});
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
 package Cassandra::TokenRange;
 use base qw(Class::Accessor);
-Cassandra::TokenRange->mk_accessors( qw( start_token end_token endpoints rpc_endpoints ) );
+Cassandra::TokenRange->mk_accessors( qw( start_token end_token endpoints rpc_endpoints endpoint_details ) );
 
 sub new {
   my $classname = shift;
@@ -2004,6 +2083,7 @@ sub new {
   $self->{end_token} = undef;
   $self->{endpoints} = undef;
   $self->{rpc_endpoints} = undef;
+  $self->{endpoint_details} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
     if (defined $vals->{start_token}) {
       $self->{start_token} = $vals->{start_token};
@@ -2016,6 +2096,9 @@ sub new {
     }
     if (defined $vals->{rpc_endpoints}) {
       $self->{rpc_endpoints} = $vals->{rpc_endpoints};
+    }
+    if (defined $vals->{endpoint_details}) {
+      $self->{endpoint_details} = $vals->{endpoint_details};
     }
   }
   return bless ($self, $classname);
@@ -2088,6 +2171,25 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
+      /^5$/ && do{      if ($ftype == TType::LIST) {
+        {
+          my $_size47 = 0;
+          $self->{endpoint_details} = [];
+          my $_etype50 = 0;
+          $xfer += $input->readListBegin(\$_etype50, \$_size47);
+          for (my $_i51 = 0; $_i51 < $_size47; ++$_i51)
+          {
+            my $elem52 = undef;
+            $elem52 = new Cassandra::EndpointDetails();
+            $xfer += $elem52->read($input);
+            push(@{$self->{endpoint_details}},$elem52);
+          }
+          $xfer += $input->readListEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
         $xfer += $input->skip($ftype);
     }
     $xfer += $input->readFieldEnd();
@@ -2115,9 +2217,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRING, scalar(@{$self->{endpoints}}));
       {
-        foreach my $iter47 (@{$self->{endpoints}}) 
+        foreach my $iter53 (@{$self->{endpoints}}) 
         {
-          $xfer += $output->writeString($iter47);
+          $xfer += $output->writeString($iter53);
         }
       }
       $xfer += $output->writeListEnd();
@@ -2129,9 +2231,23 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRING, scalar(@{$self->{rpc_endpoints}}));
       {
-        foreach my $iter48 (@{$self->{rpc_endpoints}}) 
+        foreach my $iter54 (@{$self->{rpc_endpoints}}) 
         {
-          $xfer += $output->writeString($iter48);
+          $xfer += $output->writeString($iter54);
+        }
+      }
+      $xfer += $output->writeListEnd();
+    }
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{endpoint_details}) {
+    $xfer += $output->writeFieldBegin('endpoint_details', TType::LIST, 5);
+    {
+      $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{endpoint_details}}));
+      {
+        foreach my $iter55 (@{$self->{endpoint_details}}) 
+        {
+          $xfer += ${iter55}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -2181,18 +2297,18 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size49 = 0;
+          my $_size56 = 0;
           $self->{credentials} = {};
-          my $_ktype50 = 0;
-          my $_vtype51 = 0;
-          $xfer += $input->readMapBegin(\$_ktype50, \$_vtype51, \$_size49);
-          for (my $_i53 = 0; $_i53 < $_size49; ++$_i53)
+          my $_ktype57 = 0;
+          my $_vtype58 = 0;
+          $xfer += $input->readMapBegin(\$_ktype57, \$_vtype58, \$_size56);
+          for (my $_i60 = 0; $_i60 < $_size56; ++$_i60)
           {
-            my $key54 = '';
-            my $val55 = '';
-            $xfer += $input->readString(\$key54);
-            $xfer += $input->readString(\$val55);
-            $self->{credentials}->{$key54} = $val55;
+            my $key61 = '';
+            my $val62 = '';
+            $xfer += $input->readString(\$key61);
+            $xfer += $input->readString(\$val62);
+            $self->{credentials}->{$key61} = $val62;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2217,10 +2333,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{credentials}}));
       {
-        while( my ($kiter56,$viter57) = each %{$self->{credentials}}) 
+        while( my ($kiter63,$viter64) = each %{$self->{credentials}}) 
         {
-          $xfer += $output->writeString($kiter56);
-          $xfer += $output->writeString($viter57);
+          $xfer += $output->writeString($kiter63);
+          $xfer += $output->writeString($viter64);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -2310,18 +2426,18 @@ sub read {
       last; };
       /^5$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size58 = 0;
+          my $_size65 = 0;
           $self->{index_options} = {};
-          my $_ktype59 = 0;
-          my $_vtype60 = 0;
-          $xfer += $input->readMapBegin(\$_ktype59, \$_vtype60, \$_size58);
-          for (my $_i62 = 0; $_i62 < $_size58; ++$_i62)
+          my $_ktype66 = 0;
+          my $_vtype67 = 0;
+          $xfer += $input->readMapBegin(\$_ktype66, \$_vtype67, \$_size65);
+          for (my $_i69 = 0; $_i69 < $_size65; ++$_i69)
           {
-            my $key63 = '';
-            my $val64 = '';
-            $xfer += $input->readString(\$key63);
-            $xfer += $input->readString(\$val64);
-            $self->{index_options}->{$key63} = $val64;
+            my $key70 = '';
+            my $val71 = '';
+            $xfer += $input->readString(\$key70);
+            $xfer += $input->readString(\$val71);
+            $self->{index_options}->{$key70} = $val71;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2366,10 +2482,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{index_options}}));
       {
-        while( my ($kiter65,$viter66) = each %{$self->{index_options}}) 
+        while( my ($kiter72,$viter73) = each %{$self->{index_options}}) 
         {
-          $xfer += $output->writeString($kiter65);
-          $xfer += $output->writeString($viter66);
+          $xfer += $output->writeString($kiter72);
+          $xfer += $output->writeString($viter73);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -2573,16 +2689,16 @@ sub read {
       last; };
       /^13$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size67 = 0;
+          my $_size74 = 0;
           $self->{column_metadata} = [];
-          my $_etype70 = 0;
-          $xfer += $input->readListBegin(\$_etype70, \$_size67);
-          for (my $_i71 = 0; $_i71 < $_size67; ++$_i71)
+          my $_etype77 = 0;
+          $xfer += $input->readListBegin(\$_etype77, \$_size74);
+          for (my $_i78 = 0; $_i78 < $_size74; ++$_i78)
           {
-            my $elem72 = undef;
-            $elem72 = new Cassandra::ColumnDef();
-            $xfer += $elem72->read($input);
-            push(@{$self->{column_metadata}},$elem72);
+            my $elem79 = undef;
+            $elem79 = new Cassandra::ColumnDef();
+            $xfer += $elem79->read($input);
+            push(@{$self->{column_metadata}},$elem79);
           }
           $xfer += $input->readListEnd();
         }
@@ -2670,18 +2786,18 @@ sub read {
       last; };
       /^30$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size73 = 0;
+          my $_size80 = 0;
           $self->{compaction_strategy_options} = {};
-          my $_ktype74 = 0;
-          my $_vtype75 = 0;
-          $xfer += $input->readMapBegin(\$_ktype74, \$_vtype75, \$_size73);
-          for (my $_i77 = 0; $_i77 < $_size73; ++$_i77)
+          my $_ktype81 = 0;
+          my $_vtype82 = 0;
+          $xfer += $input->readMapBegin(\$_ktype81, \$_vtype82, \$_size80);
+          for (my $_i84 = 0; $_i84 < $_size80; ++$_i84)
           {
-            my $key78 = '';
-            my $val79 = '';
-            $xfer += $input->readString(\$key78);
-            $xfer += $input->readString(\$val79);
-            $self->{compaction_strategy_options}->{$key78} = $val79;
+            my $key85 = '';
+            my $val86 = '';
+            $xfer += $input->readString(\$key85);
+            $xfer += $input->readString(\$val86);
+            $self->{compaction_strategy_options}->{$key85} = $val86;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2697,18 +2813,18 @@ sub read {
       last; };
       /^32$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size80 = 0;
+          my $_size87 = 0;
           $self->{compression_options} = {};
-          my $_ktype81 = 0;
-          my $_vtype82 = 0;
-          $xfer += $input->readMapBegin(\$_ktype81, \$_vtype82, \$_size80);
-          for (my $_i84 = 0; $_i84 < $_size80; ++$_i84)
+          my $_ktype88 = 0;
+          my $_vtype89 = 0;
+          $xfer += $input->readMapBegin(\$_ktype88, \$_vtype89, \$_size87);
+          for (my $_i91 = 0; $_i91 < $_size87; ++$_i91)
           {
-            my $key85 = '';
-            my $val86 = '';
-            $xfer += $input->readString(\$key85);
-            $xfer += $input->readString(\$val86);
-            $self->{compression_options}->{$key85} = $val86;
+            my $key92 = '';
+            my $val93 = '';
+            $xfer += $input->readString(\$key92);
+            $xfer += $input->readString(\$val93);
+            $self->{compression_options}->{$key92} = $val93;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2778,9 +2894,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{column_metadata}}));
       {
-        foreach my $iter87 (@{$self->{column_metadata}}) 
+        foreach my $iter94 (@{$self->{column_metadata}}) 
         {
-          $xfer += ${iter87}->write($output);
+          $xfer += ${iter94}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -2857,10 +2973,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{compaction_strategy_options}}));
       {
-        while( my ($kiter88,$viter89) = each %{$self->{compaction_strategy_options}}) 
+        while( my ($kiter95,$viter96) = each %{$self->{compaction_strategy_options}}) 
         {
-          $xfer += $output->writeString($kiter88);
-          $xfer += $output->writeString($viter89);
+          $xfer += $output->writeString($kiter95);
+          $xfer += $output->writeString($viter96);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -2877,10 +2993,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{compression_options}}));
       {
-        while( my ($kiter90,$viter91) = each %{$self->{compression_options}}) 
+        while( my ($kiter97,$viter98) = each %{$self->{compression_options}}) 
         {
-          $xfer += $output->writeString($kiter90);
-          $xfer += $output->writeString($viter91);
+          $xfer += $output->writeString($kiter97);
+          $xfer += $output->writeString($viter98);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -2962,18 +3078,18 @@ sub read {
       last; };
       /^3$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size92 = 0;
+          my $_size99 = 0;
           $self->{strategy_options} = {};
-          my $_ktype93 = 0;
-          my $_vtype94 = 0;
-          $xfer += $input->readMapBegin(\$_ktype93, \$_vtype94, \$_size92);
-          for (my $_i96 = 0; $_i96 < $_size92; ++$_i96)
+          my $_ktype100 = 0;
+          my $_vtype101 = 0;
+          $xfer += $input->readMapBegin(\$_ktype100, \$_vtype101, \$_size99);
+          for (my $_i103 = 0; $_i103 < $_size99; ++$_i103)
           {
-            my $key97 = '';
-            my $val98 = '';
-            $xfer += $input->readString(\$key97);
-            $xfer += $input->readString(\$val98);
-            $self->{strategy_options}->{$key97} = $val98;
+            my $key104 = '';
+            my $val105 = '';
+            $xfer += $input->readString(\$key104);
+            $xfer += $input->readString(\$val105);
+            $self->{strategy_options}->{$key104} = $val105;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2989,16 +3105,16 @@ sub read {
       last; };
       /^5$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size99 = 0;
+          my $_size106 = 0;
           $self->{cf_defs} = [];
-          my $_etype102 = 0;
-          $xfer += $input->readListBegin(\$_etype102, \$_size99);
-          for (my $_i103 = 0; $_i103 < $_size99; ++$_i103)
+          my $_etype109 = 0;
+          $xfer += $input->readListBegin(\$_etype109, \$_size106);
+          for (my $_i110 = 0; $_i110 < $_size106; ++$_i110)
           {
-            my $elem104 = undef;
-            $elem104 = new Cassandra::CfDef();
-            $xfer += $elem104->read($input);
-            push(@{$self->{cf_defs}},$elem104);
+            my $elem111 = undef;
+            $elem111 = new Cassandra::CfDef();
+            $xfer += $elem111->read($input);
+            push(@{$self->{cf_defs}},$elem111);
           }
           $xfer += $input->readListEnd();
         }
@@ -3039,10 +3155,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{strategy_options}}));
       {
-        while( my ($kiter105,$viter106) = each %{$self->{strategy_options}}) 
+        while( my ($kiter112,$viter113) = each %{$self->{strategy_options}}) 
         {
-          $xfer += $output->writeString($kiter105);
-          $xfer += $output->writeString($viter106);
+          $xfer += $output->writeString($kiter112);
+          $xfer += $output->writeString($viter113);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -3059,9 +3175,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{cf_defs}}));
       {
-        foreach my $iter107 (@{$self->{cf_defs}}) 
+        foreach my $iter114 (@{$self->{cf_defs}}) 
         {
-          $xfer += ${iter107}->write($output);
+          $xfer += ${iter114}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -3126,16 +3242,16 @@ sub read {
       last; };
       /^2$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size108 = 0;
+          my $_size115 = 0;
           $self->{columns} = [];
-          my $_etype111 = 0;
-          $xfer += $input->readListBegin(\$_etype111, \$_size108);
-          for (my $_i112 = 0; $_i112 < $_size108; ++$_i112)
+          my $_etype118 = 0;
+          $xfer += $input->readListBegin(\$_etype118, \$_size115);
+          for (my $_i119 = 0; $_i119 < $_size115; ++$_i119)
           {
-            my $elem113 = undef;
-            $elem113 = new Cassandra::Column();
-            $xfer += $elem113->read($input);
-            push(@{$self->{columns}},$elem113);
+            my $elem120 = undef;
+            $elem120 = new Cassandra::Column();
+            $xfer += $elem120->read($input);
+            push(@{$self->{columns}},$elem120);
           }
           $xfer += $input->readListEnd();
         }
@@ -3165,9 +3281,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{columns}}));
       {
-        foreach my $iter114 (@{$self->{columns}}) 
+        foreach my $iter121 (@{$self->{columns}}) 
         {
-          $xfer += ${iter114}->write($output);
+          $xfer += ${iter121}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
@@ -3229,29 +3345,8 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size115 = 0;
-          $self->{name_types} = {};
-          my $_ktype116 = 0;
-          my $_vtype117 = 0;
-          $xfer += $input->readMapBegin(\$_ktype116, \$_vtype117, \$_size115);
-          for (my $_i119 = 0; $_i119 < $_size115; ++$_i119)
-          {
-            my $key120 = '';
-            my $val121 = '';
-            $xfer += $input->readString(\$key120);
-            $xfer += $input->readString(\$val121);
-            $self->{name_types}->{$key120} = $val121;
-          }
-          $xfer += $input->readMapEnd();
-        }
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == TType::MAP) {
-        {
           my $_size122 = 0;
-          $self->{value_types} = {};
+          $self->{name_types} = {};
           my $_ktype123 = 0;
           my $_vtype124 = 0;
           $xfer += $input->readMapBegin(\$_ktype123, \$_vtype124, \$_size122);
@@ -3261,7 +3356,28 @@ sub read {
             my $val128 = '';
             $xfer += $input->readString(\$key127);
             $xfer += $input->readString(\$val128);
-            $self->{value_types}->{$key127} = $val128;
+            $self->{name_types}->{$key127} = $val128;
+          }
+          $xfer += $input->readMapEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::MAP) {
+        {
+          my $_size129 = 0;
+          $self->{value_types} = {};
+          my $_ktype130 = 0;
+          my $_vtype131 = 0;
+          $xfer += $input->readMapBegin(\$_ktype130, \$_vtype131, \$_size129);
+          for (my $_i133 = 0; $_i133 < $_size129; ++$_i133)
+          {
+            my $key134 = '';
+            my $val135 = '';
+            $xfer += $input->readString(\$key134);
+            $xfer += $input->readString(\$val135);
+            $self->{value_types}->{$key134} = $val135;
           }
           $xfer += $input->readMapEnd();
         }
@@ -3298,10 +3414,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{name_types}}));
       {
-        while( my ($kiter129,$viter130) = each %{$self->{name_types}}) 
+        while( my ($kiter136,$viter137) = each %{$self->{name_types}}) 
         {
-          $xfer += $output->writeString($kiter129);
-          $xfer += $output->writeString($viter130);
+          $xfer += $output->writeString($kiter136);
+          $xfer += $output->writeString($viter137);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -3313,10 +3429,10 @@ sub write {
     {
       $xfer += $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{$self->{value_types}}));
       {
-        while( my ($kiter131,$viter132) = each %{$self->{value_types}}) 
+        while( my ($kiter138,$viter139) = each %{$self->{value_types}}) 
         {
-          $xfer += $output->writeString($kiter131);
-          $xfer += $output->writeString($viter132);
+          $xfer += $output->writeString($kiter138);
+          $xfer += $output->writeString($viter139);
         }
       }
       $xfer += $output->writeMapEnd();
@@ -3394,16 +3510,16 @@ sub read {
       last; };
       /^2$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size133 = 0;
+          my $_size140 = 0;
           $self->{rows} = [];
-          my $_etype136 = 0;
-          $xfer += $input->readListBegin(\$_etype136, \$_size133);
-          for (my $_i137 = 0; $_i137 < $_size133; ++$_i137)
+          my $_etype143 = 0;
+          $xfer += $input->readListBegin(\$_etype143, \$_size140);
+          for (my $_i144 = 0; $_i144 < $_size140; ++$_i144)
           {
-            my $elem138 = undef;
-            $elem138 = new Cassandra::CqlRow();
-            $xfer += $elem138->read($input);
-            push(@{$self->{rows}},$elem138);
+            my $elem145 = undef;
+            $elem145 = new Cassandra::CqlRow();
+            $xfer += $elem145->read($input);
+            push(@{$self->{rows}},$elem145);
           }
           $xfer += $input->readListEnd();
         }
@@ -3446,9 +3562,9 @@ sub write {
     {
       $xfer += $output->writeListBegin(TType::STRUCT, scalar(@{$self->{rows}}));
       {
-        foreach my $iter139 (@{$self->{rows}}) 
+        foreach my $iter146 (@{$self->{rows}}) 
         {
-          $xfer += ${iter139}->write($output);
+          $xfer += ${iter146}->write($output);
         }
       }
       $xfer += $output->writeListEnd();
