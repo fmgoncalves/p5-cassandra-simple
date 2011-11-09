@@ -53,7 +53,7 @@ sub new {
 			  @{ $loadbalancer->get()->describe_ring($keyspace) } )
 	{
 		next if $opt->{server_name} eq $_;
-		my %params = {$opt};
+		my %params = %$opt;
 		$params{server_name} = $_;
 		$loadbalancer->add_pool(ResourcePool->new(Cassandra::Pool::CassandraServerFactory->new(\%params)));
 	}
