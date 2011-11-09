@@ -25,6 +25,11 @@ use Thrift::BinaryProtocol;
 use Thrift::FramedTransport;
 use Thrift::Socket;
 
+use ResourcePool;
+use ResourcePool::LoadBalancer;
+
+use Cassandra::Pool::CassandraServer;
+
 use Data::Dumper;
 
 sub new {
@@ -33,128 +38,44 @@ sub new {
 	my $opt      = shift;
 	my $self     = {};
 
-	my $server_name = $opt->{server_name} // '127.0.0.1';
-	my $server_port = $opt->{server_port} // 9160;
 
-	$self->{username} = $opt->{username} // '';
-	$self->{password} = $opt->{password} // '';
+	$opt->{keyspace}    = $keyspace;
 
 	$self = bless( $self, $class );
 
-	$self->{keyspace}    = $keyspace;
-	
-	my $first = $self->create_client(
-				 { server_name => $server_name, server_port => $server_port } );
-
-	$self->{server_port} = $server_port;
-
-	$self->{pool} = {};
-
-	$self->{pool}->{$server_name} = [ $first, 0 ];
-
+	 my $loadbalancer = ResourcePool::LoadBalancer->new("cassandra", MaxTry => 6);#TODO try alternative policy methods
+		
+	$loadbalancer->add_pool(ResourcePool->new(Cassandra::Pool::CassandraServerFactory->new($opt))); 
+ 
 #	print Dumper map { split( /\//, $_->{endpoints}->[0]) } @{$first->describe_ring($keyspace)};
 
 	foreach ( map { split( /\//, $_->{endpoints}->[0] ) }
-			  @{ $first->describe_ring($keyspace) } )
+			  @{ $loadbalancer->get()->describe_ring($keyspace) } )
 	{
-		next if $server_name eq $_;
-
-		#		print ">> ",$_," ",$keyspace,"\n";
-		$self->{pool}->{$_} = [ undef, 0 ];
+		next if $opt->{server_name} eq $_;
+		my %params = {$opt};
+		$params{server_name} = $_;
+		$loadbalancer->add_pool(ResourcePool->new(Cassandra::Pool::CassandraServerFactory->new(\%params)));
 	}
-
+	$self->{pool} = $loadbalancer;
+	
 	return $self;
 }
 
-sub create_client {
-
-	my $self        = shift;
-	my $opt         = shift // {};
-	my $server_name = $opt->{server_name};
-	my $server_port = $opt->{server_port} // 9160;
-
-	my $sock = Thrift::Socket->new( $server_name, $server_port );
-
-	my $transport = Thrift::FramedTransport->new( $sock, 1024, 1024 );
-
-	my $protocol = Thrift::BinaryProtocol->new($transport);
-
-	my $client = Cassandra::CassandraClient->new($protocol);
-
-	$transport->open;
-
-	#	print "»opened transport \n";
-
-	my $auth = Cassandra::AuthenticationRequest->new;
-	$auth->{credentials} =
-	  { username => $self->{username}, password => $self->{password} };
-
-	$client->login($auth);
-	$client->set_keyspace( $self->{keyspace} );
-
-	return $client;
-}
-
-sub get {
+sub get{
 	my $self = shift;
-
-	#TODO: obviously not a good solution. should use a priorityqueue or something, not sort the whole pool at every get.
-	my @ol =
-	  sort { $self->{pool}->{$a}->[1] cmp $self->{pool}->{$b}->[1] } 
-	  keys %{ $self->{pool} };
-	my $server_name = shift @ol;
-	
-	#print Dumper $self->{pool}->{$server_name};
-	#print ">Defined long name ". defined $self->{pool}->{$server_name}->[0]."\n";
-	
-	my $cl          = $self->{pool}->{$server_name}->[0];
-
-	#print ">Defined short ". defined $cl."\n";
-
-	while ( (not defined $cl)  and scalar @ol ) {
-		#print ">> undef $server_name ". defined $cl, "\n";
-		eval {
-			$cl = $self->create_client(
-										{
-										  server_name => $server_name,
-										  server_port => $self->{server_port}
-										}
-			);
-			$self->{pool}->{$server_name}->[0] = $cl;
-		};
-		if ($@) {
-			$self->{pool}->{$server_name}->[1] += 5;
-			$server_name = shift @ol;
-			$cl          = $self->{pool}->{$server_name}->[0];
-		}
-	}
-#	print "COUNTER for $server_name -> " . $self->{pool}->{$server_name}->[1], "\n";
-	$self->{pool}->{$server_name}->[1] += 1;
-
-	#print "$server_name ->". defined $cl. " |";
-
-	return $cl;
+	return $self->{pool}->get(@_);
 }
 
-sub put {
+sub put{
 	my $self = shift;
-	my $client = shift;
-	
-	my $server_name = $client->{input}->{trans}->{transport}->{host};
-	
-	$self->{pool}->{$server_name}->[1] -= 1;
+	return $self->{pool}->free(@_);
 }
 
-sub fail {
+sub fail{
 	my $self = shift;
-	my $client = shift;
-	my $server_name = $client->{input}->{trans}->{transport}->{host};
-	
-#	print "FAILED $server_name";
-	
-	$self->{pool}->{$server_name}->[1] += 5;
-	$self->{pool}->{$server_name}->[0] = undef;
+	return $self->{pool}->fail(@_);
 }
-
+#get, put, fail
 
 1

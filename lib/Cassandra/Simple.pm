@@ -284,8 +284,10 @@ sub multiget {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $cl = $self->pool->get();
+	my $t0 = time;
 	my $result =
 	  eval { $cl->multiget_slice( $keys, $columnParent, $predicate, $level ) };
+
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 
@@ -890,7 +892,7 @@ sub remove {
 
 	if ($keys) {
 
-		$keys = [$keys] unless ref($keys) eq 'ARRAY';
+		$keys = [$keys] unless UNIVERSAL::isa( $keys, 'ARRAY' );
 
 		my $deletion =
 		  Cassandra::Deletion->new(

@@ -10,7 +10,7 @@ our @EXPORT = qw/ composite composite_to_array/;
 
 use Data::Dumper;
 
-=head2 multiget
+=head2 composite
 
 Usage: C<< composite($component [, $component [, ...]]) >>
 
