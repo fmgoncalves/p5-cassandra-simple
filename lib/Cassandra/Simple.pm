@@ -947,7 +947,7 @@ Returns an HASH of C<< { column_family_name => column_family_type } >> where col
 
 sub list_keyspace_cfs {
 	my $self = shift;
-	return keys %{ $self->ksdef };
+	return [ keys %{ $self->ksdef } ];
 }
 
 =head2 create_column_family
