@@ -55,7 +55,7 @@ sub new {
 		next if $opt->{server_name} eq $_;
 		my %params = %$opt;
 		$params{server_name} = $_;
-		$loadbalancer->add_pool(ResourcePool->new(Cassandra::Pool::CassandraServerFactory->new(\%params)));
+		$loadbalancer->add_pool(ResourcePool->new(Cassandra::Pool::CassandraServerFactory->new(\%params), PreCreate => 2));
 	}
 	$self->{pool} = $loadbalancer;
 	

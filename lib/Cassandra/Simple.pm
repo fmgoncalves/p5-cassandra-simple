@@ -172,12 +172,15 @@ sub _wait_for_agreement {
 	my $self = shift;
 	my $cl   = $self->pool->get();
 
-	while ( 1 != scalar keys %{ $cl->describe_schema_versions() } ) {
-		sleep 0.25;
-	}
-
+	eval {
+		while ( 1 != scalar keys %{ $cl->describe_schema_versions() } )
+		{
+			sleep 0.25;
+		}
+		$self->pool->put($cl);
+	};
+	if ($@) { print Dumper $@;$self->pool->fail($cl); }
 }
-
 #### API methods ####
 
 =head2 get
