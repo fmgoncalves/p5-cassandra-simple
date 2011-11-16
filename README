@@ -97,8 +97,9 @@ SYNOPSYS
 
       expression_list, start_key, row_count
 
-      The *expression_list* is an *ARRAYREF* of the form "[ [ column =>
-      value ] ]"
+      The *expression_list* is an *ARRAYREF* of *ARRAYREF* containing
+      "$column[, $operator], $value". $operator can be '=', '<', '>', '<='
+      or '>='.
 
     $opt is an *HASH* and can have the following keys:
 
