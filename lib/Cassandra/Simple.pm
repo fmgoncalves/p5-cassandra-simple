@@ -60,7 +60,8 @@ use Data::Dumper;
 use Any::Moose;
 has 'pool' => ( is => 'rw', isa => 'Cassandra::Pool', lazy_build => 1 );
 has 'ksdef' => ( is => 'rw', lazy_build => 1 );
-has 'consistency_level_read' => ( is => 'rw', isa => 'Str', default => 'ONE' );
+has 'consistency_level_read' =>
+  ( is => 'rw', isa => 'Str', default => 'LOCAL_QUORUM' );
 has 'consistency_level_write' => ( is => 'rw', isa => 'Str', default => 'ONE' );
 has 'keyspace'    => ( is => 'rw', isa => 'Str' );
 has 'password'    => ( is => 'rw', isa => 'Str', default => '' );
@@ -168,6 +169,20 @@ sub _column_or_supercolumn_to_hash {
 
 }
 
+sub _index_operator {
+	my $self = shift;
+	my $operator = shift || "=";
+
+	return {
+			 "="  => Cassandra::IndexOperator::EQ,
+			 "<"  => Cassandra::IndexOperator::LT,
+			 ">"  => Cassandra::IndexOperator::GT,
+			 "<=" => Cassandra::IndexOperator::LTE,
+			 ">=" => Cassandra::IndexOperator::GTE,
+	}->{$operator};
+
+}
+
 sub _wait_for_agreement {
 	my $self = shift;
 	my $cl   = $self->pool->get();
@@ -179,7 +194,7 @@ sub _wait_for_agreement {
 		}
 		$self->pool->put($cl);
 	};
-	if ($@) { print Dumper $@;$self->pool->fail($cl); }
+	if ($@) { print Dumper $@; $self->pool->fail($cl); }
 }
 #### API methods ####
 
@@ -501,7 +516,7 @@ C<$index_clause> is an I<HASH> containing the following keys:
 
 expression_list, start_key, row_count
 
-The I<expression_list> is an I<ARRAYREF> of the form C<< [ [ column => value ] ] >>
+The I<expression_list> is an I<ARRAYREF> of I<ARRAYREF> containing C<<  $column[, $operator], $value >>. C<$operator> can be '=', '<', '>', '<=' or '>='.
 
 =back
 
@@ -531,11 +546,13 @@ sub get_indexed_slices {
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 
 	my @index_expr = map {
+		my ( $col, $op, $val ) = @$_;
+		($op, $val) = ($val, $op) unless $val;
 		Cassandra::IndexExpression->new(
 										 {
-										   column_name => $_->[0],
-										   op => Cassandra::IndexOperator::EQ,
-										   value => $_->[1]
+										   column_name => $col,
+										   op    => $self->_index_operator($op),
+										   value => $val
 										 }
 		);
 	} @{ $index_clause->{'expression_list'} };

@@ -132,6 +132,14 @@ println Dumper $conn->get_indexed_slices( $column_family,
 #Expected result: Rows whisky1, whisky2, whisky4
 
 println
+"\$conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' , '=' , '12' ] ] })";
+println Dumper $conn->get_indexed_slices( $column_family,
+								 { expression_list => [ [ 'age' , '=' , '12' ] ] } );
+
+#Expected result: Rows whisky1, whisky2, whisky4
+
+
+println
   "\$conn->remove($column_family, [ 'ChaveA' ], { columns => [ 'ColunaA1' ]})";
 println Dumper $conn->remove( $column_family, ['ChaveA'],
 							  { columns => ['ColunaA1'] } );
