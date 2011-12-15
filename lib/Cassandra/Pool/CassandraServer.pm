@@ -31,19 +31,26 @@ sub new {
 
 	$self->{client} = Cassandra::CassandraClient->new($protocol);
 
-	$transport->open;
+	eval {
+		$transport->open;
 
-	my $auth = Cassandra::AuthenticationRequest->new;
-	$auth->{credentials} = {
-							 username => $opt->{username} || '',
-							 password => $opt->{password} || ''
+		my $auth = Cassandra::AuthenticationRequest->new;
+		$auth->{credentials} = {
+								 username => $opt->{username} || '',
+								 password => $opt->{password} || ''
+		};
+
+		$self->{client}->set_keyspace( $opt->{keyspace} );
+		$self->{client}->login($auth);
 	};
 
-	$self->{client}->login($auth);
-	$self->{client}->set_keyspace( $opt->{keyspace} );
+	if ($!) {
+		my $error = $@->{message} || $!;
+
+		die $error;
+	}
 
 	bless( $self, $class );
-
 	return $self;
 }
 
@@ -126,7 +133,7 @@ Usually this method just stores the parameters somewhere and will use it later c
 sub new {
 	my ( $class, $params ) = @_;
 
-	die 'A keyspace must be provided' unless $params->{keyspace};
+	#die 'A keyspace must be provided' unless $params->{keyspace};
 
 	my $self = {};
 	$self->{params} = $params;
@@ -144,9 +151,7 @@ Returns: a reference to a ResourcePool::Resource object
 
 sub create_resource {
 	my $self = shift;
-
 	return new Cassandra::Pool::CassandraServer( $self->{params} );
 }
-
 
 1;

@@ -184,6 +184,13 @@ SYNOPSYS
     is an HASH containing Column Family Definition options (column_type,
     comparator_type, etc.).
 
+  create_keyspace
+    Usage "create_keyspace($keyspace [, $opt])"
+
+    $opt is an *HASH* and can have the following keys:
+
+      strategy
+
   create_index
     Usage: "create_index($keyspace, $column_family, $columns,
     [$validation_class])"

@@ -12,31 +12,49 @@ sub println {
 	print @_, "\n";
 }
 
-my ( $keyspace, $column_family, $composite_column_family) = qw/simple simple simplecomposite/;
+my ( $keyspace, $column_family, $composite_column_family ) =
+  qw/simple simple simplecomposite/;
+
+my $sys_conn = Cassandra::Simple->new( server_name => hostname() );
+unless ( grep { $_ eq $keyspace } @{ $sys_conn->list_keyspaces() } ) {
+	println "Creating keyspace $keyspace";
+	$sys_conn->create_keyspace($keyspace);
+}
 
 my $conn = Cassandra::Simple->new( server_name => hostname(),
 								   keyspace    => $keyspace, );
 
-
 my $present =
-  grep { $_ eq $column_family } @{ [ $conn->list_keyspace_cfs($keyspace) ] };
+  grep { $_ eq $column_family } @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
 	println "Creating $column_family in $keyspace";
-	$conn->create_column_family( $keyspace, $column_family,
-									 {
-									   comparator_type          => 'UTF8Type',
-									   key_validation_class     => 'UTF8Type',
-									   default_validation_class => 'UTF8Type',
-									 } );
+	$conn->create_column_family(
+								 $keyspace,
+								 $column_family,
+								 {
+									comparator_type          => 'UTF8Type',
+									key_validation_class     => 'UTF8Type',
+									default_validation_class => 'UTF8Type',
+								 }
+	);
 }
 
 $present =
-  grep { $_ eq $composite_column_family} @{ [ $conn->list_keyspace_cfs($keyspace) ] };
+  grep { $_ eq $composite_column_family }
+  @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
 	println "Creating $composite_column_family in $keyspace";
-	$conn->create_column_family( $keyspace, $composite_column_family );
+	$conn->create_column_family(
+					   $keyspace,
+					   $composite_column_family,
+					   {
+						 comparator_type => 'CompositeType(UTF8Type,UTF8Type)',
+						 key_validation_class     => 'UTF8Type',
+						 default_validation_class => 'UTF8Type',
+					   }
+	);
 }
 
 #Method to test					code here		success
@@ -135,10 +153,9 @@ println Dumper $conn->get_indexed_slices( $column_family,
 println
 "\$conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' , '=' , '12' ] ] })";
 println Dumper $conn->get_indexed_slices( $column_family,
-								 { expression_list => [ [ 'age' , '=' , '12' ] ] } );
+							  { expression_list => [ [ 'age', '=', '12' ] ] } );
 
 #Expected result: Rows whisky1, whisky2, whisky4
-
 
 println
   "\$conn->remove($column_family, [ 'ChaveA' ], { columns => [ 'ColunaA1' ]})";
@@ -172,11 +189,11 @@ println Dumper $conn->get_range($column_family);
 println "\$conn->ring('simple')";
 println Dumper $conn->ring('simple');
 
-
 println
 "\$conn->insert(  $composite_column_family,  'hello',  {  composite( 'a','en') => 'world' ,  composite('a','pt') => 'mundo'  } )";
 println Dumper $conn->insert(
-							  $composite_column_family, "hello",
+							  $composite_column_family,
+							  "hello",
 							  {
 								 composite( "a", "en" ) => "world",
 								 composite( "a", "pt" ) => "mundo"
@@ -184,10 +201,15 @@ println Dumper $conn->insert(
 );
 
 println
-  "\$conn->get( $composite_column_family,  'hello', { columns => [ composite('a', 'pt' ) ] } )";
+"\$conn->get( $composite_column_family,  'hello', { columns => [ composite('a', 'pt' ) ] } )";
 my $x = $conn->get( $composite_column_family, "hello",
-						   { columns => [ composite( "a", "pt" ) ] } );
-println Dumper { map { ( join ':', @{composite_to_array($_)} ) => $x->{$_} } keys % $x };
+					{ columns => [ composite( "a", "pt" ) ] } );
+println Dumper {
+	map { ( join ':', @{ composite_to_array($_) } ) => $x->{$_} } keys %$x;
+};
 
 println Dumper "\$conn->remove($composite_column_family)";
 println Dumper $conn->remove($composite_column_family);
+
+println Dumper "\$conn->drop_keyspace($keyspace)";
+println Dumper $sys_conn->drop_keyspace($keyspace);

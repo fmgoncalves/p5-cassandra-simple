@@ -52,7 +52,7 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 =cut
 
-our $VERSION="0.1";
+our $VERSION = "0.1";
 
 use strict;
 use warnings;
@@ -238,7 +238,7 @@ sub get {
 
 	if ( exists $opt->{columns} )
 	{ #TODO extra case for when only 1 column is requested, use thrift api's get
-		$predicate->{column_names} =  $opt->{columns} ;
+		$predicate->{column_names} = $opt->{columns};
 	} else {
 		my $sliceRange = Cassandra::SliceRange->new($opt);
 		$sliceRange->{start}    = $opt->{column_start}    // '';
@@ -549,7 +549,7 @@ sub get_indexed_slices {
 
 	my @index_expr = map {
 		my ( $col, $op, $val ) = @$_;
-		($op, $val) = ($val, $op) unless $val;
+		( $op, $val ) = ( $val, $op ) unless $val;
 		Cassandra::IndexExpression->new(
 										 {
 										   column_name => $col,
@@ -961,7 +961,7 @@ sub remove {
 
 =head2 list_keyspace_cfs
 
-Usage: C<< list_keyspace_cfs($keyspace) >>
+Usage: C<< list_keyspace_cfs() >>
 
 Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super>
 
@@ -995,10 +995,12 @@ sub create_column_family {
 
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->system_add_column_family($cfdef) };
-	$self->_wait_for_agreement();
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
+
+	$self->_wait_for_agreement();
 	$self->clear_ksdef();
+
 	return $res;
 }
 
@@ -1019,22 +1021,72 @@ strategy
 sub create_keyspace {
 	my $self = shift;
 
-	my $keyspace      = shift;
-	my $opt           = shift // {};
+	my $keyspace = shift;
+	my $opt = shift // {};
 
-	$opt->{strategy} = 'org.apache.cassandra.locator.SimpleStrategy' unless $opt->{strategy};
-	$opt->{cf_defs} = [];
-	$opt->{name} = $keyspace;
-	
-	my $ksdef = Cassandra::KsDef->new($opt);
+	my $params = {};
+	$params->{strategy_class} =
+	  'org.apache.cassandra.locator.NetworkTopologyStrategy'
+	  unless $opt->{strategy};
 
+	$params->{strategy_options} = { 'datacenter1' => '1' }
+	  unless $opt->{strategy_options};
+
+	$params->{cf_defs} = [];
+	$params->{name}    = $keyspace;
+
+	my $ksdef = Cassandra::KsDef->new($params);
 
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->system_add_keyspace($ksdef) };
-	$self->_wait_for_agreement();
+
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
-	
+
+	$self->_wait_for_agreement();
+
+	return $res;
+}
+
+=head2 list_keyspaces
+
+Usage C<< list_keyspaces() >>
+
+=cut
+
+sub list_keyspaces {
+
+	my $self = shift;
+
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->describe_keyspaces() };
+
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
+
+	$res = [ map { $_->{name} } @$res ];
+
+	return $res;
+}
+
+=head2 drop_keyspace
+
+Usage C<< drop_keyspace($keyspace [, $opt]) >>
+
+=cut
+
+sub drop_keyspace {
+	my $self     = shift;
+	my $keyspace = shift;
+
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->system_drop_keyspace($keyspace) };
+
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
+
+	$self->_wait_for_agreement();
+
 	return $res;
 }
 
@@ -1110,11 +1162,13 @@ sub ring {
 
 	my $self = shift;
 
-	my $keyspace = shift;
-	my $cl       = $self->pool->get();
+	my $keyspace = shift || $self->keyspace;
+	my $cl = $self->pool->get();
 
 	my @result = eval {
-		map { $_->{endpoints}->[0] } @{ $cl->describe_ring($keyspace) };
+		map {
+			map { $_ } @{ $_->{rpc_endpoints} }
+		} @{ $cl->describe_ring($keyspace) };
 	};
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
