@@ -14,8 +14,9 @@ sub println {
 
 my ( $keyspace, $column_family, $composite_column_family) = qw/simple simple simplecomposite/;
 
-my $conn = Cassandra::Simple->new( server_name => '127.0.0.1',
+my $conn = Cassandra::Simple->new( server_name => hostname(),
 								   keyspace    => $keyspace, );
+
 
 my $present =
   grep { $_ eq $column_family } @{ [ $conn->list_keyspace_cfs($keyspace) ] };

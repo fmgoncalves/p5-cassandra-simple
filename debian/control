@@ -1,0 +1,20 @@
+Source: libcassandra-simple-perl
+Section: perl
+Priority: optional
+Maintainer: filipe <filipe@>
+Build-Depends: debhelper (>= 8)
+Build-Depends-Indep: perl
+Standards-Version: 3.9.2
+Homepage: http://search.cpan.org/dist/Cassandra-Simple/
+
+Package: libcassandra-simple-perl
+Architecture: all
+Depends: ${misc:Depends}, ${perl:Depends}
+Description: Cassandra::Simple
+ Easy to use, Perl oriented client interface to Apache Cassandra.
+ .
+ Cassandra::Simple attempts to abstract the underlying Thrift methods as much
+ as possible to allow any Perl developer a small learning curve when using
+ Cassandra.
+ .
+ This description was automagically extracted from the module by dh-make-perl.

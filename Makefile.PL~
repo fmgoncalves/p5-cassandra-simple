@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME              => 'Cassandra::Simple',
     VERSION_FROM      => 'lib/Cassandra/Simple.pm', # finds $VERSION
-    LICENSE           => 'perl',
+    LICENSE => 'perl',
     PREREQ_PM         => {
         'Any::Moose' => '0',
         'Data::Dumper' => 0,
@@ -18,6 +18,5 @@ WriteMakefile(
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (
-	ABSTRACT => '',
        AUTHOR         => 'Filipe Gonçalves <the.wa.syndrome@gmail.com>') : ()),
 );

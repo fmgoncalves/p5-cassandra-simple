@@ -148,9 +148,5 @@ sub create_resource {
 	return new Cassandra::Pool::CassandraServer( $self->{params} );
 }
 
-#TODO implement remaining methods if needed only
-#$factory->info
-#$factory->mk_singleton_key
-#$factory->singleton
 
 1;

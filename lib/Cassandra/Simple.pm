@@ -52,6 +52,8 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 =cut
 
+our $VERSION="0.1";
+
 use strict;
 use warnings;
 
@@ -236,7 +238,7 @@ sub get {
 
 	if ( exists $opt->{columns} )
 	{ #TODO extra case for when only 1 column is requested, use thrift api's get
-		$predicate->{column_names} = [ map { $_ } @{ $opt->{columns} } ];
+		$predicate->{column_names} =  $opt->{columns} ;
 	} else {
 		my $sliceRange = Cassandra::SliceRange->new($opt);
 		$sliceRange->{start}    = $opt->{column_start}    // '';
@@ -1000,6 +1002,42 @@ sub create_column_family {
 	return $res;
 }
 
+=head2 create_keyspace
+
+Usage C<< create_keyspace($keyspace [, $opt]) >>
+
+C<$opt> is an I<HASH> and can have the following keys:
+
+=over 2
+
+strategy
+
+=back
+
+=cut
+
+sub create_keyspace {
+	my $self = shift;
+
+	my $keyspace      = shift;
+	my $opt           = shift // {};
+
+	$opt->{strategy} = 'org.apache.cassandra.locator.SimpleStrategy' unless $opt->{strategy};
+	$opt->{cf_defs} = [];
+	$opt->{name} = $keyspace;
+	
+	my $ksdef = Cassandra::KsDef->new($opt);
+
+
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->system_add_keyspace($ksdef) };
+	$self->_wait_for_agreement();
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
+	
+	return $res;
+}
+
 =head2 create_index
 
 Usage: C<< create_index($keyspace, $column_family, $columns, [$validation_class]) >>
@@ -1089,8 +1127,6 @@ sub ring {
 Bugs should be reported on github at L<https://github.com/fmgoncalves/p5-cassandra-simple>.
 
 =cut
-
-#TODO TODOs
 
 =head1 TODO
 
