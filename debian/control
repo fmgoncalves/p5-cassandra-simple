@@ -1,7 +1,7 @@
 Source: libcassandra-simple-perl
 Section: perl
 Priority: optional
-Maintainer: filipe <filipe@>
+Maintainer: filipe <the.wa.syndrome@gmail.com>
 Build-Depends: debhelper (>= 8)
 Build-Depends-Indep: perl
 Standards-Version: 3.9.2
