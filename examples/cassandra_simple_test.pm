@@ -204,9 +204,8 @@ println
 "\$conn->get( $composite_column_family,  'hello', { columns => [ composite('a', 'pt' ) ] } )";
 my $x = $conn->get( $composite_column_family, "hello",
 					{ columns => [ composite( "a", "pt" ) ] } );
-println Dumper {
-	map { ( join ':', @{ composite_to_array($_) } ) => $x->{$_} } keys %$x;
-};
+my %aux = map { ( join ':', @{ composite_to_array($_) } ) => $x->{$_} } keys %$x;
+println Dumper \%aux;
 
 println Dumper "\$conn->remove($composite_column_family)";
 println Dumper $conn->remove($composite_column_family);

@@ -172,7 +172,7 @@ SYNOPSYS
     The timestamp used for remove is returned.
 
   list_keyspace_cfs
-    Usage: "list_keyspace_cfs($keyspace)"
+    Usage: "list_keyspace_cfs()"
 
     Returns an HASH of "{ column_family_name => column_family_type }" where
     column family type is either "Standard" or "Super"
@@ -190,6 +190,12 @@ SYNOPSYS
     $opt is an *HASH* and can have the following keys:
 
       strategy
+
+  list_keyspaces
+    Usage "list_keyspaces()"
+
+  drop_keyspace
+    Usage "drop_keyspace($keyspace [, $opt])"
 
   create_index
     Usage: "create_index($keyspace, $column_family, $columns,
