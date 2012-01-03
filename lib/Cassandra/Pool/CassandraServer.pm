@@ -6,7 +6,8 @@ use warnings;
 use Cassandra::Cassandra;
 use Cassandra::Types;
 use Thrift;
-use Thrift::BinaryProtocol;
+eval "use Thrift::XS::BinaryProtocol";
+if ($@) {use Thrift::BinaryProtocol }
 use Thrift::FramedTransport;
 use Thrift::Socket;
 
