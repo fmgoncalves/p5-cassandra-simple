@@ -13,8 +13,8 @@ WriteMakefile(
         'Thrift' => '0',
         'Thrift::BinaryProtocol' => '0',
         'Thrift::FramedTransport' => '0',
-	'ResourcePool' => '0',
-	'Thrift::Socket' => '0',
+        'ResourcePool' => '0',
+        'Thrift::Socket' => '0',
         'constant' => '0'
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
