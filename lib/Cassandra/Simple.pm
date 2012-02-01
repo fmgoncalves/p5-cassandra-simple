@@ -77,6 +77,7 @@ use Cassandra::Cassandra;
 use Cassandra::Pool;
 use strict;
 use warnings;
+use Time::HiRes qw/gettimeofday/;
 ### Thrift Protocol/Client methods ###
 
 sub _build_pool {
@@ -304,7 +305,6 @@ sub multiget {
 	my $level = $self->_consistency_level_read($opt);
 
 	my $cl = $self->pool->get();
-	my $t0 = time;
 	my $result =
 	  eval { $cl->multiget_slice( $keys, $columnParent, $predicate, $level ) };
 
@@ -635,7 +635,6 @@ sub insert {
 	my $columnParent =
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 	my $level = $self->_consistency_level_write($opt);
-
 	my @mutations = map {
 		new Cassandra::Mutation(
 						{
@@ -647,7 +646,7 @@ sub insert {
 									  {
 										name      => $_,
 										value     => $columns->{$_},
-										timestamp => $opt->{timestamp} // time,
+										timestamp => $opt->{timestamp} // int (gettimeofday * 1000),
 										ttl       => $opt->{ttl} // undef,
 									  }
 								   )
@@ -711,7 +710,7 @@ sub insert_super {
 											   name  => $_,
 											   value => $columns->{$arg}->{$_},
 											   timestamp => $opt->{timestamp}
-												 // time,
+												 // int (gettimeofday * 1000),
 											   ttl => $opt->{ttl} // undef,
 											 }
 									   )
@@ -778,7 +777,7 @@ sub batch_insert {
 									  {
 										 name      => $_,
 										 value     => $columns->{$_},
-										 timestamp => $opt->{timestamp} // time,
+										 timestamp => $opt->{timestamp} // int (gettimeofday * 1000),
 										 ttl       => $opt->{ttl} // undef,
 									  }
 									)
