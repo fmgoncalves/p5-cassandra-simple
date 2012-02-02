@@ -646,7 +646,7 @@ sub insert {
 									  {
 										name      => $_,
 										value     => $columns->{$_},
-										timestamp => $opt->{timestamp} // int (gettimeofday * 1000),
+										timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
 										ttl       => $opt->{ttl} // undef,
 									  }
 								   )
@@ -710,7 +710,7 @@ sub insert_super {
 											   name  => $_,
 											   value => $columns->{$arg}->{$_},
 											   timestamp => $opt->{timestamp}
-												 // int (gettimeofday * 1000),
+												 // int (gettimeofday * 1000000),
 											   ttl => $opt->{ttl} // undef,
 											 }
 									   )
@@ -777,7 +777,7 @@ sub batch_insert {
 									  {
 										 name      => $_,
 										 value     => $columns->{$_},
-										 timestamp => $opt->{timestamp} // int (gettimeofday * 1000),
+										 timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
 										 ttl       => $opt->{ttl} // undef,
 									  }
 									)
@@ -908,7 +908,7 @@ sub remove {
 	my $keys          = shift;
 	my $opt           = shift // {};
 
-	my $timestamp = time;
+	my $timestamp = int (gettimeofday * 1000000);
 	my $level     = $self->_consistency_level_write($opt);
 
 	if ($keys) {
