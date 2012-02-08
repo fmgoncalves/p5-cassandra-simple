@@ -61,7 +61,6 @@ use Data::Dumper;
 
 use Any::Moose;
 has 'pool' => ( is => 'rw', isa => 'Cassandra::Pool', lazy_build => 1 );
-has 'ksdef' => ( is => 'rw', lazy_build => 1 );
 has 'consistency_level_read' =>
   ( is => 'rw', isa => 'Str', default => 'LOCAL_QUORUM' );
 has 'consistency_level_write' => ( is => 'rw', isa => 'Str', default => 'ONE' );
@@ -94,26 +93,6 @@ sub _build_pool {
 							  password    => $self->password
 						   }
 	  );
-}
-
-sub _build_ksdef {
-	my $self   = shift;
-	my $cl     = $self->pool->get();
-	my $result = eval { $cl->describe_keyspace( $self->keyspace ) };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-
-	return {
-		map {
-			my $comparator = $_->{comparator_type};
-			my $validation = $_->{key_validation_class};
-			$comparator =~ s/org.apache.cassandra.db.marshal.//g;
-			$validation =~ s/org.apache.cassandra.db.marshal.//g;
-			$_->{name} =>
-			  { "comparator" => $comparator, "key_validation" => $validation }
-		  } @{ $result->{cf_defs} }
-	};
 }
 
 sub _consistency_level_read {
@@ -969,7 +948,13 @@ Returns an HASH of C<< { column_family_name => column_family_type } >> where col
 
 sub list_keyspace_cfs {
 	my $self = shift;
-	return [ keys %{ $self->ksdef } ];
+	my $keyspace = shift || $self->keyspace;
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->describe_keyspace( $keyspace )->{cf_defs} };
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
+	
+	return [map { $_->{name} } @$res];
 }
 
 =head2 create_column_family
@@ -999,7 +984,6 @@ sub create_column_family {
 	else    { $self->pool->put($cl) }
 
 	$self->_wait_for_agreement();
-	$self->clear_ksdef();
 
 	return $res;
 }
