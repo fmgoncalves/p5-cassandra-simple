@@ -47,19 +47,31 @@ sub new {
 	$loadbalancer->add_pool(
 		 ResourcePool->new( Cassandra::Pool::CassandraServerFactory->new($opt) )
 	);
+	$self->{pool} = $loadbalancer;
+	$self->{rcp_opts} = $opt;
+
+	$self = bless( $self, $class );
+
+	return $self;
+}
+
+sub add_pool_from_ring {
+	my $self = shift;
+	my $keyspace = $self->{rcp_opts}->{keyspace};
 
 	if ($keyspace) {
-		my @nodes = @{ $loadbalancer->get()->describe_ring($keyspace) };
+		my @nodes = @{ $self->{pool}->get()->describe_ring($keyspace) };
 		foreach (
 			map {
 				map { split( /\//, $_ ) } @{ $_->{rpc_endpoints} }
 			} @nodes
 		  )
 		{
-			next if $opt->{server_name} eq $_;
-			my %params = %$opt;
+			next if $self->{rcp_opts}->{server_name} eq $_;
+			my %params = %{$self->{rcp_opts}};
+
 			$params{server_name} = $_;
-			$loadbalancer->add_pool(
+			$self->{pool}->add_pool(
 				   ResourcePool->new(
 					   Cassandra::Pool::CassandraServerFactory->new( \%params ),
 					   PreCreate => 2
@@ -67,6 +79,7 @@ sub new {
 			);
 		}
 	}
+	
 	$self->{pool} = $loadbalancer;
 
 	$self = bless( $self, $class );
