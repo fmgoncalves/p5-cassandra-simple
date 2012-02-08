@@ -954,7 +954,7 @@ sub list_keyspace_cfs {
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 	
-	return [map { $_->{name} } @$res];
+	return [ map { $_->{name} } @$res ];
 }
 
 =head2 create_column_family
@@ -979,11 +979,9 @@ sub create_column_family {
 	my $cfdef = Cassandra::CfDef->new($opt);
 
 	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_add_column_family($cfdef) };
+	my $res = eval { $cl->system_add_column_family($cfdef) ; $self->_wait_for_agreement() };
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
-
-	$self->_wait_for_agreement();
 
 	return $res;
 }
@@ -1022,12 +1020,10 @@ sub create_keyspace {
 	my $ksdef = Cassandra::KsDef->new($params);
 
 	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_add_keyspace($ksdef) };
+	my $res = eval { $cl->system_add_keyspace($ksdef) ; $self->_wait_for_agreement() };
 
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
-
-	$self->_wait_for_agreement();
 
 	return $res;
 }
@@ -1064,12 +1060,10 @@ sub drop_keyspace {
 	my $keyspace = shift;
 
 	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_drop_keyspace($keyspace) };
+	my $res = eval { $cl->system_drop_keyspace($keyspace) ; $self->_wait_for_agreement() };
 
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
-
-	$self->_wait_for_agreement();
 
 	return $res;
 }
@@ -1127,8 +1121,8 @@ sub create_index {
 	$cfdef->{column_metadata} = [ values %$newmetadata ];
 
 	#print Dumper $cfdef;
-	my $res = eval { $cl->system_update_column_family($cfdef) };
-	$self->_wait_for_agreement();
+	my $res = eval { $cl->system_update_column_family($cfdef) ; $self->_wait_for_agreement() };
+	
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 	return $res;

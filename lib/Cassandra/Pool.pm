@@ -79,12 +79,6 @@ sub add_pool_from_ring {
 			);
 		}
 	}
-	
-	$self->{pool} = $loadbalancer;
-
-	$self = bless( $self, $class );
-
-	return $self;
 }
 
 sub get {
