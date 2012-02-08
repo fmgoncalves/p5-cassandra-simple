@@ -30,6 +30,7 @@ use ResourcePool::LoadBalancer;
 
 use Cassandra::Pool::CassandraServer;
 
+use Carp;
 use Data::Dumper;
 
 sub new {
@@ -47,6 +48,7 @@ sub new {
 	$loadbalancer->add_pool(
 		 ResourcePool->new( Cassandra::Pool::CassandraServerFactory->new($opt) )
 	);
+
 	$self->{pool} = $loadbalancer;
 	$self->{rcp_opts} = $opt;
 
@@ -55,36 +57,31 @@ sub new {
 	return $self;
 }
 
+sub add_pool {
+	my ($self, $keyspace,@nodes) = @_;
+	$keyspace = $keyspace || $self->{rcp_opts}->{keyspace} || croak "No keyspace specified";
+	croak "No nodes specified" unless scalar @nodes;
+	foreach ( @nodes) {
+		next if $self->{rcp_opts}->{server_name} eq $_;
+		my %params = %{$self->{rcp_opts}};
+		$params{server_name} = $_;
+		$self->{pool}->add_pool(
+			   ResourcePool->new(
+				   Cassandra::Pool::CassandraServerFactory->new( \%params ),
+				   PreCreate => 2
+			   )
+		);
+	}
+}
+
 sub add_pool_from_ring {
 	my $self = shift;
-	my $keyspace = $self->{rcp_opts}->{keyspace};
-
+	my $keyspace = shift || $self->{rcp_opts}->{keyspace} || croak "No keyspace specified";
 	if ($keyspace) {
 		my @nodes = @{ $self->{pool}->get()->describe_ring($keyspace) };
-		foreach (
-			map {
-				map { split( /\//, $_ ) } @{ $_->{rpc_endpoints} }
-			} @nodes
-		  )
-		{
-			next if $self->{rcp_opts}->{server_name} eq $_;
-			my %params = %{$self->{rcp_opts}};
-
-			$params{server_name} = $_;
-			$self->{pool}->add_pool(
-				   ResourcePool->new(
-					   Cassandra::Pool::CassandraServerFactory->new( \%params ),
-					   PreCreate => 2
-				   )
-			);
-		}
+		my @nodes_ips =	map { map { split( /\//, $_ ) } @{ $_->{rpc_endpoints} } } @nodes;
+		$self->add_pool($keyspace,@nodes_ips);
 	}
-	
-	$self->{pool} = $loadbalancer;
-
-	$self = bless( $self, $class );
-
-	return $self;
 }
 
 sub get {
