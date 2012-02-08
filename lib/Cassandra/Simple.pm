@@ -71,6 +71,7 @@ has 'server_name' => ( is => 'rw', isa => 'Str', default => '127.0.0.1' );
 has 'server_port' => ( is => 'rw', isa => 'Int', default => 9160 );
 
 has 'username' => ( is => 'rw', isa => 'Str', default => '' );
+has 'pool_from_ring' => ( is => 'rw', isa =>  'Any', trigger => sub { my $self = shift; $self->pool->add_pool_from_ring() if shift });
 
 use 5.010;
 use Cassandra::Cassandra;
