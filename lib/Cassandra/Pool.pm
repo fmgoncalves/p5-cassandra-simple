@@ -59,7 +59,7 @@ sub new {
 
 sub add_pool {
 	my ($self, $keyspace,@nodes) = @_;
-	$keyspace = $keyspace || $self->{rcp_opts}->{keyspace} || croak "No keyspace specified";
+	$keyspace = $keyspace || $self->{rcp_opts}->{keyspace};
 	croak "No nodes specified" unless scalar @nodes;
 	foreach ( @nodes) {
 		next if $self->{rcp_opts}->{server_name} eq $_;
@@ -76,7 +76,7 @@ sub add_pool {
 
 sub add_pool_from_ring {
 	my $self = shift;
-	my $keyspace = shift || $self->{rcp_opts}->{keyspace} || croak "No keyspace specified";
+	my $keyspace = shift || $self->{rcp_opts}->{keyspace};
 	if ($keyspace) {
 		my @nodes = @{ $self->{pool}->get()->describe_ring($keyspace) };
 		my @nodes_ips =	map { map { split( /\//, $_ ) } @{ $_->{rpc_endpoints} } } @nodes;
