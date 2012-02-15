@@ -27,7 +27,7 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 	$conn->create_column_family( $keyspace, $column_family);
 
-	$conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
+	$conn->insert($column_family, 'KeyA', { 'ColumnA' => 'AA' , 'ColumnB' => 'AB' } );
 
 	$conn->get($column_family, 'KeyA');
 	$conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
@@ -52,10 +52,11 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 =cut
 
-our $VERSION = "0.1";
 
 use strict;
 use warnings;
+
+our $VERSION = "0.1";
 
 use Data::Dumper;
 
@@ -84,7 +85,7 @@ sub _build_pool {
 	my $self = shift;
 
 	return
-	  new Cassandra::Pool(
+	  Cassandra::Pool->new(
 						   $self->keyspace,
 						   {
 							  server_name => $self->server_name,
@@ -102,7 +103,7 @@ sub _consistency_level_read {
 	my $level = $opt->{consistency_level_read} // $self->consistency_level_read;
 
 	eval "\$level = Cassandra::ConsistencyLevel::$level;";
-	$level;
+	return $level;
 }
 
 sub _consistency_level_write {
@@ -113,7 +114,7 @@ sub _consistency_level_write {
 	  // $self->consistency_level_write;
 
 	eval "\$level = Cassandra::ConsistencyLevel::$level;";
-	$level;
+	return $level;
 }
 
 sub _column_or_supercolumn_to_hash {
@@ -177,7 +178,8 @@ sub _wait_for_agreement {
 		}
 		$self->pool->put($cl);
 	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl); }
+	if ($@) { print Dumper $@; $self->pool->fail($cl); return 0; }
+	return 1;
 }
 #### API methods ####
 
@@ -616,13 +618,13 @@ sub insert {
 	  Cassandra::ColumnParent->new( { column_family => $column_family } );
 	my $level = $self->_consistency_level_write($opt);
 	my @mutations = map {
-		new Cassandra::Mutation(
+		Cassandra::Mutation->new(
 						{
 						  column_or_supercolumn =>
 							Cassandra::ColumnOrSuperColumn->new(
 							   {
 								 column =>
-								   new Cassandra::Column(
+								   Cassandra::Column->new(
 									  {
 										name      => $_,
 										value     => $columns->{$_},
@@ -676,7 +678,7 @@ sub insert_super {
 
 	my @mutations = map {
 		my $arg = $_;
-		new Cassandra::Mutation(
+		Cassandra::Mutation->new(
 			{
 			   column_or_supercolumn => Cassandra::ColumnOrSuperColumn->new(
 				   {
@@ -685,7 +687,7 @@ sub insert_super {
 							 name    => $_,
 							 columns => [
 								 map {
-									 new Cassandra::Column(
+									 Cassandra::Column->new(
 											 {
 											   name  => $_,
 											   value => $columns->{$arg}->{$_},
@@ -747,13 +749,13 @@ sub batch_insert {
 		$_ => {
 			$column_family => [
 				map {
-					new Cassandra::Mutation(
+					Cassandra::Mutation->new(
 						{
 						   column_or_supercolumn =>
 							 Cassandra::ColumnOrSuperColumn->new(
 							   {
 								  column =>
-									new Cassandra::Column(
+									Cassandra::Column->new(
 									  {
 										 name      => $_,
 										 value     => $columns->{$_},
@@ -846,7 +848,7 @@ sub remove_counter {
 	my $level = $self->_consistency_level_write($opt);
 
 	my $columnPath =
-	  new Cassandra::ColumnPath(
+	  Cassandra::ColumnPath->new(
 							   {
 								 column_family => $column_family,
 								 super_column  => $opt->{super_column} // undef,
@@ -921,7 +923,7 @@ sub remove {
 
 		my %mutation_map = map {
 			$_ => { $column_family =>
-					[ new Cassandra::Mutation( { deletion => $deletion, } ) ] }
+					[ Cassandra::Mutation->new( { deletion => $deletion, } ) ] }
 		} @{$keys};
 		my $cl = $self->pool->get();
 		eval { $cl->batch_mutate( \%mutation_map, $level ); };
@@ -1108,7 +1110,7 @@ sub create_index {
 
 	foreach my $col ( @{$columns} ) {
 		$newmetadata->{$col} =
-		  $newmetadata->{$col} // new Cassandra::ColumnDef(
+		  $newmetadata->{$col} // Cassandra::ColumnDef->new(
 									   {
 										 name             => $col,
 										 validation_class => $validation_class,
