@@ -67,7 +67,7 @@ has 'consistency_level_read' =>
 has 'consistency_level_write' => ( is => 'rw', isa => 'Str', default => 'ONE' );
 has 'keyspace'    => ( is => 'rw', isa => 'Str' );
 has 'password'    => ( is => 'rw', isa => 'Str', default => '' );
-has 'server_name' => ( is => 'rw', isa => 'Str', default => '127.0.0.1' );
+has 'server_name' => ( is => 'rw', isa => 'Str', default => 'localhost' );
 has 'server_port' => ( is => 'rw', isa => 'Int', default => 9160 );
 
 has 'username' => ( is => 'rw', isa => 'Str', default => '' );
@@ -927,16 +927,15 @@ sub remove {
 		} @{$keys};
 		my $cl = $self->pool->get();
 		eval { $cl->batch_mutate( \%mutation_map, $level ); };
-		if ($@) { print Dumper $@; $self->pool->fail($cl) }
-		else    { $self->pool->put($cl) }
+		if ($@) { print Dumper $@; $self->pool->fail($cl); return 0}
+		else    { $self->pool->put($cl) ;
+		return $timestamp}
 
-		return $timestamp;
 	} else {
 		my $cl = $self->pool->get();
 		my $res = eval { $cl->truncate($column_family); };
-		if ($@) { print Dumper $@; $self->pool->fail($cl) }
-		else    { $self->pool->put($cl) }
-		return $res;
+		if ($@) { print Dumper $@; $self->pool->fail($cl); return 0;}
+		else    { $self->pool->put($cl); return $res || 1 }
 	}
 }
 
@@ -1205,10 +1204,6 @@ describe_keyspace
 
 KsDef describe_keyspace(string keyspace)
 
-describe_keyspaces
-
-list<KsDef> describe_keyspaces()
-
 describe_partitioner
 
 string describe_partitioner()
@@ -1225,14 +1220,6 @@ system_drop_column_family
 
 string system_drop_column_family(ColumnFamily column_family)
 
-system_add_keyspace
-
-string system_add_keyspace(KSDef ks_def)
-
-system_drop_keyspace
-
-string system_drop_keyspace(string keyspace)
-
 =back
 
 
@@ -1240,7 +1227,7 @@ string system_drop_keyspace(string keyspace)
 
 =head1 ACKNOWLEDGEMENTS
 
-Implementation based on Cassandra::Lite.
+Implementation loosely based on Cassandra::Lite.
 
 =over 2
 

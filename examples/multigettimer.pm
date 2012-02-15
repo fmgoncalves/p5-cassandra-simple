@@ -1,3 +1,5 @@
+#! /usr/bin/perl -l
+
 use strict;
 use warnings;
 
@@ -6,23 +8,23 @@ use Data::Dumper;
 use Cassandra::Simple;
 use Cassandra::Composite qw/composite composite_to_array/;
 
-use Sys::Hostname qw/hostname/;
 use Time::HiRes qw/time/;
 
-sub println {
-	print @_, "\n";
+my ( $keyspace, $column_family) = qw/simple multigetsimple/;
+
+my $sys_conn = Cassandra::Simple->new();
+unless ( grep { $_ eq $keyspace } @{ $sys_conn->list_keyspaces() } ) {
+	print "Creating keyspace $keyspace";
+	$sys_conn->create_keyspace($keyspace);
 }
 
-my ( $keyspace, $column_family) = qw/simple simple/;
-
-my $conn = Cassandra::Simple->new( server_name => '127.0.0.1',
-								   keyspace    => $keyspace, );
+my $conn = Cassandra::Simple->new( keyspace    => $keyspace, );
 
 my $present =
-  grep { $_ eq $column_family } @{ [ $conn->list_keyspace_cfs($keyspace) ] };
+  grep { $_ eq $column_family } @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
-	println "Creating $column_family in $keyspace";
+	print "Creating $column_family in $keyspace";
 	$conn->create_column_family( $keyspace, $column_family,
 									 {
 									   comparator_type          => 'UTF8Type',
@@ -31,23 +33,27 @@ unless ($present) {
 									 } );
 }
 
-my %data= map { "k".$_ => {map{ "c".$_ => "v".$_ } 1..20} } 1..100;
-println "inserting";
+my %data= map { "k".$_ => {map{ "c".$_ => "v".$_ } 1..20} } 1..1000;
+print "inserting";
 
 $conn->batch_insert($column_family,\%data);
-println "Sleeping 3 seconds to settle and then multigeting";
+print "Sleeping 3 seconds to settle and then multigeting";
 sleep 3;
 
 my ($start,$end )= (1,3);
 
-foreach(1..10){
+foreach(1..20){
 	my $t0 = time;
 	
 	$conn->multiget($column_family, [map { "k".$_ } $start..$end]);
 	
-	println  "".($end-$start). " \t ". (time-$t0 ) ;
+	print  "".($end-$start). " \t ". (time-$t0 ) ;
 	$end += 10;
 	sleep 0.1;
 }
 
 $conn->remove($column_family);
+
+
+print Dumper "\$conn->drop_keyspace($keyspace)";
+print Dumper $sys_conn->drop_keyspace($keyspace);

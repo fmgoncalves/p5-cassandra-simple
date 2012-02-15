@@ -1,3 +1,5 @@
+#! /usr/bin/perl -l
+
 use strict;
 use warnings;
 
@@ -6,22 +8,21 @@ use Data::Dumper;
 use Cassandra::Simple;
 use Cassandra::Composite qw/composite composite_to_array/;
 
-use Sys::Hostname qw/hostname/;
+my ( $keyspace, $column_family) = qw/simple countersimple/;
 
-sub println {
-	print @_, "\n";
+my $sys_conn = Cassandra::Simple->new();
+unless ( grep { $_ eq $keyspace } @{ $sys_conn->list_keyspaces() } ) {
+	print "Creating keyspace $keyspace";
+	$sys_conn->create_keyspace($keyspace);
 }
 
-my ( $keyspace, $column_family) = qw/simple simplecounter/;
-
-my $conn = Cassandra::Simple->new( server_name => '127.0.0.1',
-								   keyspace    => $keyspace, );
+my $conn = Cassandra::Simple->new( keyspace  => $keyspace, );
 
 my $present =
-  grep { $_ eq $column_family } @{ [ $conn->list_keyspace_cfs($keyspace) ] };
+  grep { $_ eq $column_family } @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
-	println "Creating $column_family in $keyspace";
+	print "Creating $column_family in $keyspace";
 	$conn->create_column_family( $keyspace, $column_family,
 									 {
 									   comparator_type          => 'UTF8Type',
@@ -37,20 +38,22 @@ unless ($present) {
 #get												100%						100%
 
 
-println "\$conn->add($column_family, 'ChaveA', 'ColunaA')";
-println Dumper $conn->add($column_family, 'ChaveA', 'ColunaA');
+print "\$conn->add($column_family, 'ChaveA', 'ColunaA')";
+print Dumper $conn->add($column_family, 'ChaveA', 'ColunaA');
 
-println "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
-println Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
+print "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
+print Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
 #Expected result: ColunaA -> 1
 
-println "\$conn->add($column_family, 'ChaveA', 'ColunaA',10)";
-println Dumper $conn->add($column_family, 'ChaveA', 'ColunaA', 10);
+print "\$conn->add($column_family, 'ChaveA', 'ColunaA',10)";
+print Dumper $conn->add($column_family, 'ChaveA', 'ColunaA', 10);
 
-println "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
-println Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
+print "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
+print Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
 #Expected result: ColunaA -> 11
 
-println "\$conn->remove_counter($column_family, 'ChaveA', 'ColunaA')";
-println Dumper $conn->remove_counter($column_family, 'ChaveA', 'ColunaA');
+print "\$conn->remove_counter($column_family, 'ChaveA', 'ColunaA')";
+print Dumper $conn->remove_counter($column_family, 'ChaveA', 'ColunaA');
 
+print Dumper "\$conn->drop_keyspace($keyspace)";
+print Dumper $sys_conn->drop_keyspace($keyspace);

@@ -1,3 +1,5 @@
+#! /usr/bin/perl -l
+
 use strict;
 use warnings;
 
@@ -5,53 +7,59 @@ use Data::Dumper;
 
 use Cassandra::Simple;
 
-sub println {
-	print @_, "\n";
-}
-
 my ( $keyspace, $column_family ) = qw/simple ttlsimple/;
+
+my $sys_conn = Cassandra::Simple->new();
+unless ( grep { $_ eq $keyspace } @{ $sys_conn->list_keyspaces() } ) {
+	print "Creating keyspace $keyspace";
+	$sys_conn->create_keyspace($keyspace);
+}
 
 my $conn = Cassandra::Simple->new( keyspace => $keyspace, );
 
 my $present =
-  grep { $_ eq $column_family } @{[ $conn->list_keyspace_cfs($keyspace) ]};
+  grep { $_ eq $column_family } @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
-	println "Creating $column_family in $keyspace";
+	print "Creating $column_family in $keyspace";
 	$conn->create_column_family( $keyspace, $column_family );
 }
 
-println "\$conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } )";
+print "\$conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } )";
 $conn->insert($column_family, 'DyingKey', { 'C1' => 'Dead1' , 'C2' => 'Dead2' }, { ttl => 20 } );
 
-println "\$conn->insert($column_family, 'DyingKey', { 'C3' => 'Dead3' } , { ttl => 30 })";
+print "\$conn->insert($column_family, 'DyingKey', { 'C3' => 'Dead3' } , { ttl => 30 })";
 $conn->insert($column_family, 'DyingKey', { 'C3' => 'Dead3' } , { ttl => 30 });
 
-println "\$conn->get($column_family, 'DyingKey')";
-println Dumper $conn->get($column_family, 'DyingKey');
+print "\$conn->get($column_family, 'DyingKey')";
+print Dumper $conn->get($column_family, 'DyingKey');
 #Expected result: C1, C2 and C3
 
-println "sleep(22)";
+print "sleep(22)";
 for (my $i=22; $i >= 0; $i--){
 	print "$i . . ";
 	sleep(1);
 }
-println "\n";
+print "\n";
 
-println "\$conn->get($column_family, 'DyingKey')";
-println Dumper $conn->get($column_family, 'DyingKey');
+print "\$conn->get($column_family, 'DyingKey')";
+print Dumper $conn->get($column_family, 'DyingKey');
 #Expected result: C3
 
-println "sleep(12)";
+print "sleep(12)";
 for (my $i=12; $i >= 0; $i--){
 	print "$i . . ";
 	sleep(1);
 }
-println "\n";
+print "\n";
 
-println "\$conn->get($column_family, 'DyingKey')";
-println Dumper $conn->get($column_family, 'DyingKey');
+print "\$conn->get($column_family, 'DyingKey')";
+print Dumper $conn->get($column_family, 'DyingKey');
 #Expected result: none
 
-println "\$conn->remove($column_family)";
-println Dumper $conn->remove($column_family);
+print "\$conn->remove($column_family)";
+print Dumper $conn->remove($column_family);
+
+
+print Dumper "\$conn->drop_keyspace($keyspace)";
+print Dumper $sys_conn->drop_keyspace($keyspace);

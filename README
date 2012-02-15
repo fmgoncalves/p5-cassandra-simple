@@ -258,10 +258,6 @@ TODO
 
       KsDef describe_keyspace(string keyspace)
 
-      describe_keyspaces
-
-      list<KsDef> describe_keyspaces()
-
       describe_partitioner
 
       string describe_partitioner()
@@ -278,16 +274,8 @@ TODO
 
       string system_drop_column_family(ColumnFamily column_family)
 
-      system_add_keyspace
-
-      string system_add_keyspace(KSDef ks_def)
-
-      system_drop_keyspace
-
-      string system_drop_keyspace(string keyspace)
-
 ACKNOWLEDGEMENTS
-    Implementation based on Cassandra::Lite.
+    Implementation loosely based on Cassandra::Lite.
 
       <http://search.cpan.org/~gslin/Cassandra-Lite-0.0.4/lib/Cassandra/Lite
       .pm>

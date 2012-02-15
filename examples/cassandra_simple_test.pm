@@ -1,3 +1,5 @@
+#! /usr/bin/perl -l
+
 use strict;
 use warnings;
 
@@ -6,29 +8,22 @@ use Data::Dumper;
 use Cassandra::Simple;
 use Cassandra::Composite qw/composite composite_to_array/;
 
-use Sys::Hostname qw/hostname/;
-
-sub println {
-	print @_, "\n";
-}
-
 my ( $keyspace, $column_family, $composite_column_family ) =
   qw/simple simple simplecomposite/;
 
-my $sys_conn = Cassandra::Simple->new( server_name => hostname() );
+my $sys_conn = Cassandra::Simple->new();
 unless ( grep { $_ eq $keyspace } @{ $sys_conn->list_keyspaces() } ) {
-	println "Creating keyspace $keyspace";
+	print "Creating keyspace $keyspace";
 	$sys_conn->create_keyspace($keyspace);
 }
 
-my $conn = Cassandra::Simple->new( server_name => hostname(),
-								   keyspace    => $keyspace, );
+my $conn = Cassandra::Simple->new( keyspace    => $keyspace, );
 
 my $present =
   grep { $_ eq $column_family } @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
-	println "Creating $column_family in $keyspace";
+	print "Creating $column_family in $keyspace";
 	$conn->create_column_family(
 								 $keyspace,
 								 $column_family,
@@ -45,7 +40,7 @@ $present =
   @{ $conn->list_keyspace_cfs($keyspace) };
 
 unless ($present) {
-	println "Creating $composite_column_family in $keyspace";
+	print "Creating $composite_column_family in $keyspace";
 	$conn->create_column_family(
 					   $keyspace,
 					   $composite_column_family,
@@ -70,33 +65,33 @@ unless ($present) {
 #composite get				100%			100%
 #composite insert		100%			100%
 
-println
+print
 "\$conn->insert($column_family, 'ChaveA', { 'ColunaA1' => 'ValorA1' , 'ColunaA2' => 'ValorA2' } )";
 $conn->insert( $column_family, 'ChaveA',
 			   { 'ColunaA1' => 'ValorA1', 'ColunaA2' => 'ValorA2' } );
 
-println
+print
   "\$conn->get($column_family, 'ChaveA', { columns => [ qw/ColunaA1/ ] })";
-println Dumper $conn->get( $column_family, 'ChaveA',
+print Dumper $conn->get( $column_family, 'ChaveA',
 						   { columns => [qw/ColunaA1/] } );
 
 #Expected result: ValorA1
 
-println "\$conn->get($column_family, 'ChaveA')";
-println Dumper $conn->get( $column_family, 'ChaveA' );
+print "\$conn->get($column_family, 'ChaveA')";
+print Dumper $conn->get( $column_family, 'ChaveA' );
 
 #Expected result: { 'ColunaA1' => 'ValorA1', 'ColunaA2' => 'ValorA2' }
 
-println
+print
 "\$conn->get($column_family, 'ChaveA', { column_count => 1, column_reversed => 1 })";
-println Dumper $conn->get( $column_family, 'ChaveA',
+print Dumper $conn->get( $column_family, 'ChaveA',
 						   { column_count => 1, column_reversed => 1 } );
 
 #Expected result: only one column, the last given by get($column_family, 'ChaveA')
 
-println
+print
 "\$conn->batch_insert($column_family, { 'ChaveB' => {'ColunaB1' => 'ValorB1' , 'ColunaB2' => 'ValorB2' }, 'ChaveC' => { 'ColunaC1' => 'ValorC1' , 'ColunaC2' => 'ValorC2' } })";
-println Dumper $conn->batch_insert(
+print Dumper $conn->batch_insert(
 									$column_family,
 									{
 									   'ChaveB' => {
@@ -110,14 +105,14 @@ println Dumper $conn->batch_insert(
 									}
 );
 
-println "\$conn->multiget($column_family, [ qw/ChaveA ChaveC/ ])";
-println Dumper $conn->multiget( $column_family, [qw/ChaveA ChaveC/] );
+print "\$conn->multiget($column_family, [ qw/ChaveA ChaveC/ ])";
+print Dumper $conn->multiget( $column_family, [qw/ChaveA ChaveC/] );
 
 #Expected result: all content from ChaveA and ChaveC
 
-println
+print
 "\$conn->get_range($column_family, { start=> 'ChaveA', finish => 'ChaveB', column_count => 1 })";
-println Dumper $conn->get_range(
+print Dumper $conn->get_range(
 								 $column_family,
 								 {
 									start        => 'ChaveA',
@@ -128,12 +123,12 @@ println Dumper $conn->get_range(
 
 #Expected result: Depends on key order inside Cassandra. Probably only these 2 keys are returned with 1 column each.
 
-println "\$conn->create_index($keyspace, $column_family, 'age')";
-println Dumper $conn->create_index( $keyspace, $column_family, 'age' );
+print "\$conn->create_index($keyspace, $column_family, 'age')";
+print Dumper $conn->create_index( $keyspace, $column_family, 'age' );
 
-println
+print
 "\$conn->batch_insert($column_family, { 'whisky1' => { 'age' => 12 }, 'whisky2' => { 'age' => 12 }, 'whisky3' => { 'age' => 15 }, 'whisky4' => { 'age' => 12 } })";
-println Dumper $conn->batch_insert(
+print Dumper $conn->batch_insert(
 									$column_family,
 									{
 									   'whisky1' => { 'age' => 12 },
@@ -143,55 +138,55 @@ println Dumper $conn->batch_insert(
 									}
 );
 
-println
+print
 "\$conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' => '12' ] ] })";
-println Dumper $conn->get_indexed_slices( $column_family,
+print Dumper $conn->get_indexed_slices( $column_family,
 								 { expression_list => [ [ 'age' => '12' ] ] } );
 
 #Expected result: Rows whisky1, whisky2, whisky4
 
-println
+print
 "\$conn->get_indexed_slices($column_family, { expression_list => [ [ 'age' , '=' , '12' ] ] })";
-println Dumper $conn->get_indexed_slices( $column_family,
+print Dumper $conn->get_indexed_slices( $column_family,
 							  { expression_list => [ [ 'age', '=', '12' ] ] } );
 
 #Expected result: Rows whisky1, whisky2, whisky4
 
-println
+print
   "\$conn->remove($column_family, [ 'ChaveA' ], { columns => [ 'ColunaA1' ]})";
-println Dumper $conn->remove( $column_family, ['ChaveA'],
+print Dumper $conn->remove( $column_family, ['ChaveA'],
 							  { columns => ['ColunaA1'] } );
 
-println "\$conn->multiget_count($column_family, ['ChaveA', 'ChaveB'])";
-println Dumper $conn->multiget_count( $column_family, [ 'ChaveA', 'ChaveB' ] );
+print "\$conn->multiget_count($column_family, ['ChaveA', 'ChaveB'])";
+print Dumper $conn->multiget_count( $column_family, [ 'ChaveA', 'ChaveB' ] );
 
 #Expected result: ChaveA -> 1, ChaveB -> 2
 
-println "\$conn->get_count($column_family, 'whisky2')";
-println Dumper $conn->get_count( $column_family, 'whisky2' );
+print "\$conn->get_count($column_family, 'whisky2')";
+print Dumper $conn->get_count( $column_family, 'whisky2' );
 
 #Expected result: 1
 
-println "\$conn->remove($column_family, 'whisky2')";
-println Dumper $conn->remove( $column_family, 'whisky2' );
+print "\$conn->remove($column_family, 'whisky2')";
+print Dumper $conn->remove( $column_family, 'whisky2' );
 
-println "\$conn->get($column_family, 'whisky2')";
-println Dumper $conn->get( $column_family, 'whisky2' );
+print "\$conn->get($column_family, 'whisky2')";
+print Dumper $conn->get( $column_family, 'whisky2' );
 
-println "\$conn->remove($column_family)";
-println Dumper $conn->remove($column_family);
+print "\$conn->remove($column_family)";
+print Dumper $conn->remove($column_family);
 
-println "\$conn->get_range($column_family)";
-println Dumper $conn->get_range($column_family);
+print "\$conn->get_range($column_family)";
+print Dumper $conn->get_range($column_family);
 
 #Expected result: empty list
 
-println "\$conn->ring('simple')";
-println Dumper $conn->ring('simple');
+print "\$conn->ring('simple')";
+print Dumper $conn->ring('simple');
 
-println
+print
 "\$conn->insert(  $composite_column_family,  'hello',  {  composite( 'a','en') => 'world' ,  composite('a','pt') => 'mundo'  } )";
-println Dumper $conn->insert(
+print Dumper $conn->insert(
 							  $composite_column_family,
 							  "hello",
 							  {
@@ -200,15 +195,15 @@ println Dumper $conn->insert(
 							  }
 );
 
-println
+print
 "\$conn->get( $composite_column_family,  'hello', { columns => [ composite('a', 'pt' ) ] } )";
 my $x = $conn->get( $composite_column_family, "hello",
 					{ columns => [ composite( "a", "pt" ) ] } );
 my %aux = map { ( join ':', @{ composite_to_array($_) } ) => $x->{$_} } keys %$x;
-println Dumper \%aux;
+print Dumper \%aux;
 
-println Dumper "\$conn->remove($composite_column_family)";
-println Dumper $conn->remove($composite_column_family);
+print Dumper "\$conn->remove($composite_column_family)";
+print Dumper $conn->remove($composite_column_family);
 
-println Dumper "\$conn->drop_keyspace($keyspace)";
-println Dumper $sys_conn->drop_keyspace($keyspace);
+print Dumper "\$conn->drop_keyspace($keyspace)";
+print Dumper $sys_conn->drop_keyspace($keyspace);

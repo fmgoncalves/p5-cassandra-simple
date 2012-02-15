@@ -21,7 +21,7 @@ sub new {
 
 	my $self = {};
 
-	my $server_name = $opt->{server_name} || '127.0.0.1';
+	my $server_name = $opt->{server_name} || 'localhost';
 	my $server_port = $opt->{server_port} || 9160;
 
 	my $sock = Thrift::Socket->new( $server_name, $server_port );
