@@ -18,7 +18,7 @@ SYNOPSYS
 
             $conn->create_column_family( $keyspace, $column_family);
 
-            $conn->insert($column_family, 'KeyA', [ [ 'ColumnA' => 'AA' ], [ 'ColumnB' => 'AB' ] ] );
+            $conn->insert($column_family, 'KeyA', { 'ColumnA' => 'AA' , 'ColumnB' => 'AB'  } );
 
             $conn->get($column_family, 'KeyA');
             $conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
