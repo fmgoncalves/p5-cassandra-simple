@@ -800,7 +800,8 @@ sub add {
 	my $column_family = shift;
 	my $key           = shift;
 	my $column        = shift;
-	my $value         = shift || 1;
+	my $value         = shift;
+	$value = 1 unless defined $value;
 	my $opt           = shift || {};
 
 	my $level = $self->_consistency_level_write($opt);

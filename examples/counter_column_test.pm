@@ -45,6 +45,13 @@ print "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
 print Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
 #Expected result: ColunaA -> 1
 
+print "\$conn->add($column_family, 'ChaveA', 'ColunaA', 0)";
+print Dumper $conn->add($column_family, 'ChaveA', 'ColunaA', 0);
+
+print "\$conn->get($column_family, 'ChaveA', {columns => ['ColunaA']})";
+print Dumper $conn->get($column_family, 'ChaveA', {columns => ['ColunaA']});
+#Expected result: ColunaA -> 1
+
 print "\$conn->add($column_family, 'ChaveA', 'ColunaA',10)";
 print Dumper $conn->add($column_family, 'ChaveA', 'ColunaA', 10);
 
