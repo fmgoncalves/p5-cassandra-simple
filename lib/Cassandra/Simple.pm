@@ -822,6 +822,65 @@ sub add {
 	return $res;
 }
 
+=head2 batch_add
+
+Usage: C<batch_add($column_family, $rows[, opt])>
+
+C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
+
+C<$opt> is an I<HASH> and can have the following keys:
+
+=over 2
+
+consistency_level_write
+
+=back
+
+=cut
+
+sub batch_add {
+	my $self = shift;
+
+	my $column_family = shift;
+	my $rows          = shift;
+	my $opt           = shift // {};
+
+	my $columnParent =
+	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	my $level = $self->_consistency_level_write($opt);
+
+	my %mutation_map = map {
+		my $columns = $rows->{$_};
+		$_ => {
+			$column_family => [
+				map {
+					Cassandra::Mutation->new(
+						{
+						   column_or_supercolumn =>
+							 Cassandra::ColumnOrSuperColumn->new(
+							   {
+								  counter_column =>
+									Cassandra::CounterColumn->new(
+									  {
+										 name      => $_,
+										 value     => $columns->{$_}
+									  }
+									)
+							   }
+							 )
+						}
+					);
+				  } keys %$columns
+			]
+		  }
+	} keys %$rows;
+	my $cl = $self->pool->get();
+	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
+	if ($@) { print Dumper $@; $self->pool->fail($cl) }
+	else    { $self->pool->put($cl) }
+	return $res;
+}
+
 =head2 remove_counter
 
 Usage: C<remove_counter($column_family, $key, $column [, opt])>

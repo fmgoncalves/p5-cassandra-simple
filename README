@@ -149,6 +149,16 @@ SYNOPSYS
 
       super_column, consistency_level_write
 
+  batch_add
+    Usage: "batch_add($column_family, $rows[, opt])"
+
+    $rows is an *HASH* of the form "{ key => { column => value , column =>
+    value }, key => { column => value , column => value } }"
+
+    $opt is an *HASH* and can have the following keys:
+
+      consistency_level_write
+
   remove_counter
     Usage: "remove_counter($column_family, $key, $column [, opt])"
 
