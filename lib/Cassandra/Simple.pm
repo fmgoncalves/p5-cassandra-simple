@@ -730,7 +730,7 @@ C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
 
-timestamp, ttl, consistency_level_write
+super_column, timestamp, ttl, consistency_level_write
 
 =back
 
@@ -752,12 +752,29 @@ sub batch_insert {
 		$_ => {
 			$column_family => [
 				map {
+					my $column_name = $_;
 					Cassandra::Mutation->new(
 						{
 						   column_or_supercolumn =>
 							 Cassandra::ColumnOrSuperColumn->new(
 							   {
-								  column =>
+							   		super_column => UNIVERSAL::isa($columns->{$column_name}, 'HASH') ?
+								   		Cassandra::SuperColumn->new({
+								   			name => $column_name,
+								   			columns => [
+									   			map {
+									   				Cassandra::Column->new(
+													  {
+														 name      => $_,
+														 value     => $columns->{$column_name}->{$_},
+														 timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
+														 ttl       => $opt->{ttl} // undef,
+													  }
+													)
+									   			} keys %{$columns->{$column_name}} ]
+								   		}): undef
+							   		,
+								  column => UNIVERSAL::isa($columns->{$column_name}, 'HASH') ? undef:
 									Cassandra::Column->new(
 									  {
 										 name      => $_,
@@ -835,7 +852,7 @@ C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
 
-consistency_level_write
+super_column, consistency_level_write
 
 =back
 
@@ -849,24 +866,39 @@ sub batch_add {
 	my $opt           = shift // {};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new( { column_family => $column_family, super_column => $opt->{super_column} } );
 	my $level = $self->_consistency_level_write($opt);
 
-	my %mutation_map = map {
+my %mutation_map = map {
 		my $columns = $rows->{$_};
 		$_ => {
 			$column_family => [
 				map {
+					my $column_name = $_;
 					Cassandra::Mutation->new(
 						{
 						   column_or_supercolumn =>
 							 Cassandra::ColumnOrSuperColumn->new(
 							   {
-								  counter_column =>
+							   		counter_super_column => UNIVERSAL::isa($columns->{$column_name}, 'HASH') ?
+								   		Cassandra::CounterSuperColumn->new({
+								   			name => $column_name,
+								   			columns => [
+									   			map {
+									   				Cassandra::CounterColumn->new(
+													  {
+														 name      => $_,
+														 value     => $columns->{$column_name}->{$_},
+													  }
+													)
+									   			} keys %{$columns->{$column_name}} ]
+								   		}): undef
+							   		,
+								  counter_column => UNIVERSAL::isa($columns->{$column_name}, 'HASH') ? undef:
 									Cassandra::CounterColumn->new(
 									  {
 										 name      => $_,
-										 value     => $columns->{$_}
+										 value     => $columns->{$_},
 									  }
 									)
 							   }
@@ -877,6 +909,7 @@ sub batch_add {
 			]
 		  }
 	} keys %$rows;
+	
 	my $cl = $self->pool->get();
 	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }

@@ -137,7 +137,7 @@ SYNOPSYS
 
     $opt is an *HASH* and can have the following keys:
 
-      timestamp, ttl, consistency_level_write
+      super_column, timestamp, ttl, consistency_level_write
 
   add
     Usage: "add($column_family, $key, $column, [$value [, opt]])"
@@ -157,7 +157,7 @@ SYNOPSYS
 
     $opt is an *HASH* and can have the following keys:
 
-      consistency_level_write
+      super_column, consistency_level_write
 
   remove_counter
     Usage: "remove_counter($column_family, $key, $column [, opt])"
