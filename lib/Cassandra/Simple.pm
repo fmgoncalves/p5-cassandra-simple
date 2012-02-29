@@ -79,6 +79,7 @@ use Cassandra::Pool;
 use strict;
 use warnings;
 use Time::HiRes qw/gettimeofday/;
+use Tie::DxHash;
 ### Thrift Protocol/Client methods ###
 
 sub _build_pool {
@@ -117,39 +118,44 @@ sub _consistency_level_write {
 	return $level;
 }
 
+sub ordered_hash{
+	tie my %newhash, 'Tie::DxHash', @_;
+	return \%newhash;
+}
+
 sub _column_or_supercolumn_to_hash {
 	my $self = shift;
 
 	my $cf      = shift;
 	my $c_or_sc = shift;
 
-	my @result;
+	my $result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
-		@result = ( $_->{column}->{name}, $_->{column}->{value} );
+		$result = ordered_hash( $_->{column}->{name}, $_->{column}->{value} );
 	} elsif ( exists $c_or_sc->{super_column} and $c_or_sc->{super_column} ) {
-		@result = (
+		$result = ordered_hash(
 					$c_or_sc->{super_column}->{name},
-					{
+					ordered_hash(
 					   map { $_->{name} => $_->{value} }
 						 @{ $c_or_sc->{super_column}->{columns} }
-					}
+					)
 		);
 	} elsif ( exists $c_or_sc->{counter_column} and $c_or_sc->{counter_column} )
 	{
-		@result =
-		  ( $_->{counter_column}->{name}, $_->{counter_column}->{value} );
+		$result =
+		  ordered_hash( $_->{counter_column}->{name}, $_->{counter_column}->{value} );
 	} elsif ( exists $c_or_sc->{counter_super_column}
 			  and $c_or_sc->{counter_super_column} )
 	{
-		@result = (
+		$result = ordered_hash(
 					$c_or_sc->{counter_super_column}->{name},
-					{
+					ordered_hash(
 					   map { $_->{name} => $_->{value} }
 						 @{ $c_or_sc->{counter_super_column}->{columns} }
-					}
+					)
 		);
 	}
-	return \@result;
+	return $result;
 
 }
 
@@ -237,13 +243,13 @@ sub get {
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 
-	my %result_columns =
-	  map {
+	my $result_columns = ordered_hash();
+	foreach(@$result) {
 		my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
-		$a->[0] => $a->[1]
-	  } @{$result};
+		@$result_columns{keys %$a} = values %$a;
+	 };
 
-	return \%result_columns;
+	return $result_columns;
 }
 
 =head2 multiget
@@ -293,17 +299,16 @@ sub multiget {
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 
-	my %result_columns = map {
-		$_ => {
-			map {
-				my $a =
-				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
-				$a->[0] => $a->[1]
-			  } @{ $result->{$_} }
-		  }
-	} keys %$result;
+	my $result_columns = ordered_hash();
+	foreach my $key (keys %$result) {
+		$result_columns->{$key} = ordered_hash();
+		foreach(@{$result->{$key}}){
+			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+			@{$result_columns->{$key}}{keys %$a} = values %$a;
+		}
+	 };
 
-	return \%result_columns;
+	return $result_columns;
 }
 
 =head2 get_count
@@ -477,17 +482,16 @@ sub get_range {
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 
-	my %result_columns = map {
-		$_->{key} => {
-			map {
-				my $a =
-				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
-				$a->[0] => $a->[1]
-			  } @{ $_->{columns} }
-		  }
-	} @{$result};
+	my $result_columns = ordered_hash();
+	foreach my $row(@$result) {
+		$result_columns->{$row->{key}} = ordered_hash();
+		foreach(@{$row->{columns}}){
+			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+			@{$result_columns->{$row->{key}}}{keys %$a} = values %$a;
+		}
+	 };
 
-	return \%result_columns;
+	return $result_columns;
 }
 
 =head2 get_indexed_slices
@@ -577,17 +581,16 @@ sub get_indexed_slices {
 	if ($@) { print Dumper $@; $self->pool->fail($cl) }
 	else    { $self->pool->put($cl) }
 
-	my %result_keys = map {
-		$_->{key} => {
-			map {
-				my $a =
-				  $self->_column_or_supercolumn_to_hash( $column_family, $_ );
-				$a->[0] => $a->[1]
-			  } @{ $_->{columns} }
-		  }
-	} @{$result};
+	my $result_columns = ordered_hash();
+	foreach my $row(@$result) {
+		$result_columns->{$row->{key}} = ordered_hash();
+		foreach(@{$row->{columns}}){
+			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+			@{$result_columns->{$row->{key}}}{keys %$a} = values %$a;
+		}
+	 };
 
-	return \%result_keys;
+	return $result_columns;
 }
 
 =head2 insert
