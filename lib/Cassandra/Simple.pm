@@ -300,11 +300,13 @@ sub multiget {
 	else    { $self->pool->put($cl) }
 
 	my $result_columns = ordered_hash();
-	foreach my $key (keys %$result) {
+	foreach my $key (@$keys) {
+		if ($result->{$key}){
 		$result_columns->{$key} = ordered_hash();
 		foreach(@{$result->{$key}}){
 			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
 			@{$result_columns->{$key}}{keys %$a} = values %$a;
+		}
 		}
 	 };
 
@@ -730,7 +732,7 @@ C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
 
-super_column, timestamp, ttl, consistency_level_write
+timestamp, ttl, consistency_level_write
 
 =back
 
@@ -852,7 +854,7 @@ C<$opt> is an I<HASH> and can have the following keys:
 
 =over 2
 
-super_column, consistency_level_write
+consistency_level_write
 
 =back
 
