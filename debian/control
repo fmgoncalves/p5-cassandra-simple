@@ -1,27 +1,20 @@
 Source: libcassandra-simple-perl
 Section: perl
 Priority: optional
-Maintainer: Filipe Gonçalves <the.wa.syndrome@gmail.com>
-Build-Depends: debhelper (>= 7)
-Build-Depends-Indep: libany-moose-perl,
- libclass-accessor-perl,
- libresourcepool-perl,
- libthrift-perl,
- libtie-dxhash-perl,
- perl
+Maintainer: Filipe Gonçalves <the.wa.syndrome@gmail>
+Build-Depends: debhelper (>= 7.0)
+Build-Depends-Indep: perl
 Standards-Version: 3.9.2
 Homepage: http://search.cpan.org/dist/Cassandra-Simple/
 
 Package: libcassandra-simple-perl
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends},
- libany-moose-perl,
- libclass-accessor-perl,
- libresourcepool-perl,
- libthrift-perl,
- libtie-dxhash-perl,
- perl
-Description: unknown
- (no description was found)
+Depends: ${misc:Depends}, ${perl:Depends}
+Description: Cassandra::Simple
+ Easy to use, Perl oriented client interface to Apache Cassandra.
+ .
+ Cassandra::Simple attempts to abstract the underlying Thrift methods as much
+ as possible to allow any Perl developer a small learning curve when using
+ Cassandra.
  .
  This description was automagically extracted from the module by dh-make-perl.
