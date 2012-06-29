@@ -79,7 +79,7 @@ use Cassandra::Pool;
 use strict;
 use warnings;
 use Time::HiRes qw/gettimeofday/;
-use Tie::DxHash;
+use Tie::IxHash;
 ### Thrift Protocol/Client methods ###
 
 sub _build_pool {
@@ -119,7 +119,7 @@ sub _consistency_level_write {
 }
 
 sub ordered_hash{
-	tie my %newhash, 'Tie::DxHash', @_;
+	tie my %newhash, 'Tie::IxHash', @_;
 	return \%newhash;
 }
 

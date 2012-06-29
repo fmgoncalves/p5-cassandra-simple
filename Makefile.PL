@@ -9,7 +9,7 @@ WriteMakefile(
     PREREQ_PM         => {
         'Any::Moose' => '0',
         'Data::Dumper' => '0',
-	'Tie::DxHash' => '0',
+	'Tie::IxHash' => '0',
         'Class::Accessor' => '0',
         'Thrift' => '0',
         'Thrift::BinaryProtocol' => '0',
