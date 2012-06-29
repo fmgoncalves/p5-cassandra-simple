@@ -27,7 +27,7 @@ sub composite {
 
 	#print "Input -> ". Dumper @{$args} ;
 	my $res = join "", map {
-		my $component = $_;
+		my $component = $_ || '';
 		my $eoc       = "\x00";
 		if (UNIVERSAL::isa( $_, 'ARRAY' ) ) {
 			( $component, my $last, my $inclusive ) = @{$component};
