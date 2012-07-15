@@ -1106,12 +1106,11 @@ sub create_keyspace {
 	my $opt = shift // {};
 
 	my $params = {};
-	$params->{strategy_class} =
-	  'org.apache.cassandra.locator.NetworkTopologyStrategy'
-	  unless $opt->{strategy};
+	$params->{strategy_class} = $opt->{strategy} ||
+	  'org.apache.cassandra.locator.NetworkTopologyStrategy';
 
-	$params->{strategy_options} = { 'datacenter1' => '1' }
-	  unless $opt->{strategy_options};
+	$params->{strategy_options} = $opt->{strategy_options} || 
+	  { 'datacenter1' => '1' };
 
 	$params->{cf_defs} = [];
 	$params->{name}    = $keyspace;
