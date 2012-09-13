@@ -10,7 +10,7 @@ Cassandra::Simple
 
 =head1 VERSION
 
-version 0.1
+version 0.2
 
 =head1 DESCRIPTION
 
@@ -25,29 +25,29 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 
 	my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
 
-	$conn->create_column_family( $keyspace, $column_family);
+	$conn->create_column_family( column_family => $column_family);
 
-	$conn->insert($column_family, 'KeyA', { 'ColumnA' => 'AA' , 'ColumnB' => 'AB' } );
+	$conn->insert(column_family => $column_family, key => 'KeyA', columns => { 'ColumnA' => 'AA' , 'ColumnB' => 'AB' } );
 
-	$conn->get($column_family, 'KeyA');
-	$conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
-	$conn->get($column_family, 'KeyA', { column_count => 1, column_reversed => 1 });
+	$conn->get(column_family => $column_family, key => 'KeyA');
+	$conn->get(column_family => $column_family, key => 'KeyA', columns => [ qw/ColumnA/ ]);
+	$conn->get(column_family => $column_family, key => 'KeyA', column_count => 1, column_reversed => 1);
 
-	$conn->batch_insert($column_family, { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
+	$conn->batch_insert(column_family => $column_family, rows => { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
 
-	$conn->multiget($column_family, [qw/KeyA KeyC/]);
+	$conn->multiget(column_family => $column_family, 'keys' => [qw/KeyA KeyC/]);
 
-	$conn->get_range($column_family, { start=> 'KeyA', finish => 'KeyB', column_count => 1 });
-	$conn->get_range($column_family);
+	$conn->get_range(column_family => $column_family, start => 'KeyA', finish => 'KeyB', column_count => 1 );
+	$conn->get_range(column_family => $column_family);
 
-	$conn->get_indexed_slices($column_family, { expression_list => [ [ 'ColumnA' => 'BA' ] ] });
+	$conn->get_indexed_slices(column_family => $column_family, expression_list => [ [ 'ColumnA' => 'BA' ] ]);
 
-	$conn->remove($column_family, [ 'KeyA' ], { columns => [ 'ColumnA' ]});
-	$conn->remove($column_family, [ 'KeyA' ]);
-	$conn->remove($column_family);
+	$conn->remove(column_family => $column_family, 'keys' => [ 'KeyA' ], columns => [ 'ColumnA' ]);
+	$conn->remove(column_family => $column_family, 'keys' => [ 'KeyA' ]);
+	$conn->remove(column_family => $column_family);
 
-	$conn->get_count($column_family, 'KeyA');
-	$conn->multiget_count($column_family, [ 'KeyB', 'KeyC' ]);
+	$conn->get_count(column_family => $column_family, key => 'KeyA');
+	$conn->multiget_count(column_family => $column_family, 'keys' => [ 'KeyB', 'KeyC' ]);
 
 
 =cut
@@ -56,7 +56,7 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 use strict;
 use warnings;
 
-our $VERSION = "0.1";
+our $VERSION = "0.2";
 
 use Data::Dumper;
 
@@ -76,14 +76,17 @@ has 'pool_from_ring' => ( is => 'rw', isa =>  'Any', trigger => sub { my $self =
 use 5.010;
 use Cassandra::Cassandra;
 use Cassandra::Pool;
+use Cassandra::LazyQuery;
 use strict;
 use warnings;
 use Time::HiRes qw/gettimeofday/;
 use Tie::IxHash;
+use Try::Tiny;
+use Switch;
 ### Thrift Protocol/Client methods ###
 
 sub _build_pool {
-	my $self = shift;
+	my ($self) = @_;
 
 	return
 	  Cassandra::Pool->new(
@@ -101,7 +104,7 @@ sub _consistency_level_read {
 	my $self = shift;
 	my $opt = shift // {};
 
-	my $level = $opt->{consistency_level_read} // $self->consistency_level_read;
+	my $level = $opt->{consistency_level} // $self->consistency_level_read;
 
 	eval "\$level = Cassandra::ConsistencyLevel::$level;";
 	return $level;
@@ -111,7 +114,7 @@ sub _consistency_level_write {
 	my $self = shift;
 	my $opt = shift // {};
 
-	my $level = $opt->{consistency_level_write}
+	my $level = $opt->{consistency_level}
 	  // $self->consistency_level_write;
 
 	eval "\$level = Cassandra::ConsistencyLevel::$level;";
@@ -124,10 +127,7 @@ sub ordered_hash{
 }
 
 sub _column_or_supercolumn_to_hash {
-	my $self = shift;
-
-	my $cf      = shift;
-	my $c_or_sc = shift;
+	my ($cf, $c_or_sc) = @_;
 
 	my $result;
 	if ( exists $c_or_sc->{column} and $c_or_sc->{column} ) {
@@ -175,29 +175,60 @@ sub _index_operator {
 
 sub _wait_for_agreement {
 	my $self = shift;
-	my $cl   = $self->pool->get();
 
-	eval {
-		while ( 1 != scalar keys %{ $cl->describe_schema_versions() } )
-		{
-			sleep 0.25;
-		}
-		$self->pool->put($cl);
-	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl); return 0; }
+	while ( 1 != scalar keys % { $self->_run_query('describe_schema_versions') } )
+	{
+		sleep 0.25;
+	}
+	
 	return 1;
 }
+
+sub _run_query {
+	my ($self, $method, @params) = @_;
+	my $cl    = $self->pool->get();
+	
+	return try {
+		#print "REQUEST:\n\t" .Dumper [ $method, @params ];
+		my $result = $cl->$method( @params );
+		#print "RESPONSE:\n\t".Dumper $result;
+		$self->pool->put($cl);
+		return $result;
+	} catch {
+		switch (ref($_)){
+			case [ 'TSocket', 'Cassandra::UnavailableException', 'Cassandra::TimedOutException',  'SchemaDisagreementException' ]
+				{ 
+					$self->pool->fail($cl);
+#					print 'Temporary failure ('.ref($_).'):'.$_->{why}."\n";
+				}
+			case [ 'TApplicationException', 'Cassandra::InvalidRequestException', 'Cassandra::NotFoundException' ]
+				{
+					$self->pool->put($cl);
+#					print 'Request error or permanent failure ('.ref($_).'):'.$_->{why}."\n";
+				}
+			else  {
+#				print 'Unknown error '.ref($_)."\n";
+				$self->pool->put($cl);
+			}
+		}
+		die $_;
+	};
+}
+
+sub lazy_query {
+	my ($self, $method, @params) = @_;
+	return Cassandra::LazyQuery->new($self, $method, @params);
+}
+
 #### API methods ####
 
 =head2 get
 
-Usage: C<get($column_family, $key[, opt])>
-
-C<$opt> is a I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-columns, column_start, column_finish, column_count, column_reversed, super_column, consistency_level_read
+column_family, key, columns, column_start, column_finish, column_count, column_reversed, super_column, consistency_level
 
 =back
 
@@ -206,17 +237,16 @@ Returns an HASH of the form C<< { column => value, column => value } >>
 =cut
 
 sub get {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $key           = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
 
 	my $columnParent =
 	  Cassandra::ColumnParent->new(
 							   {
-								 column_family => $column_family,
-								 super_column  => $opt->{super_column} // undef,
+								 column_family => $arguments->{column_family},
+								 super_column  => $arguments->{super_column},
 							   }
 	  );
 	my $predicate = Cassandra::SlicePredicate->new;
@@ -225,54 +255,53 @@ sub get {
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} )
+	if ( exists $arguments->{columns} )
 	{ #TODO extra case for when only 1 column is requested, use thrift api's get
-		$predicate->{column_names} = $opt->{columns};
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
-	my $level = $self->_consistency_level_read($opt);
-	my $cl    = $self->pool->get();
-	my $result =
-	  eval { $cl->get_slice( $key, $columnParent, $predicate, $level ) };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+	
+	my $level = $self->_consistency_level_read($arguments);
 
+	my $result = $self->_run_query('get_slice', $arguments->{key}, $columnParent, $predicate, $level ) ;
+		
 	my $result_columns = ordered_hash();
 	foreach(@$result) {
-		my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+		my $a = &_column_or_supercolumn_to_hash( $arguments->{column_family}, $_ );
 		@$result_columns{keys %$a} = values %$a;
 	 };
-
 	return $result_columns;
+	
 }
 
 =head2 multiget
 
-Usage: C<< multiget($column_family, $keys[, opt]) >>
+Arguments:
 
-C<$keys> should be an I<ARRAYREF> of keys to fetch.
+=over 2
 
-All parameters in C<$opt> are the same as in C<get()>
+column_family, keys, columns, column_start, column_finish, column_count, column_reversed, super_column, consistency_level
+
+=back
 
 Returns an HASH of the form C<< { key => { column => value, column => value }, key => { column => value, column => value } } >>
 
 =cut
 
 sub multiget {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $keys          = shift;
-	my $opt           = shift // {};
-
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
+	
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
 
 	my $predicate = Cassandra::SlicePredicate->new;
 
@@ -280,33 +309,28 @@ sub multiget {
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} ) {
-		$predicate->{column_names} = $opt->{columns};
+	if ( exists $arguments->{columns} ) {
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
-	my $level = $self->_consistency_level_read($opt);
+	my $level = $self->_consistency_level_read($arguments);
 
-	my $cl = $self->pool->get();
-	my $result =
-	  eval { $cl->multiget_slice( $keys, $columnParent, $predicate, $level ) };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-
+	my $result =  $self->_run_query('multiget_slice', $arguments->{keys}, $columnParent, $predicate, $level );
+		
 	my $result_columns = ordered_hash();
-	foreach my $key (@$keys) {
+	foreach my $key (@{$arguments->{keys}}) {
 		if ($result->{$key}){
-		$result_columns->{$key} = ordered_hash();
-		foreach(@{$result->{$key}}){
-			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
-			@{$result_columns->{$key}}{keys %$a} = values %$a;
-		}
+			$result_columns->{$key} = ordered_hash();
+			foreach(@{$result->{$key}}){
+				my $a = &_column_or_supercolumn_to_hash( $arguments->{column_family}, $_ );
+				@{$result_columns->{$key}}{keys %$a} = values %$a;
+			}
 		}
 	 };
 
@@ -315,13 +339,11 @@ sub multiget {
 
 =head2 get_count
 
-Usage: C<< get_count($column_family, $key[, opt]) >>
-
-C<$opt> is a I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-columns, column_start, column_finish, super_column, consistency_level_read
+column_family, key, columns, column_start, column_finish, super_column, consistency_level
 
 =back
 
@@ -330,18 +352,16 @@ Returns the count as an int
 =cut
 
 sub get_count {
-
-	my $self = shift;
-
-	my $column_family = shift;
-	my $key           = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
 
 	my $columnParent =
 	  Cassandra::ColumnParent->new(
 							   {
-								 column_family => $column_family,
-								 super_column  => $opt->{super_column} // undef,
+								 column_family => $arguments->{column_family},
+								 super_column  => $arguments->{super_column},
 							   }
 	  );
 
@@ -351,48 +371,46 @@ sub get_count {
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} ) {
-		$predicate->{column_names} = $opt->{columns};
+	if ( exists $arguments->{columns} ) {
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
-	my $level = $self->_consistency_level_read($opt);
+	my $level = $self->_consistency_level_read($arguments);
 
-	my $cl = $self->pool->get();
-	my $result =
-	  eval { $cl->get_count( $key, $columnParent, $predicate, $level ) };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+	my $result =  $self->_run_query( 'get_count', $arguments->{key}, $columnParent, $predicate, $level ) ;
+	
 	return $result;
+	
 }
 
 =head2 multiget_count
 
-Usage: C<< multiget_count($column_family, $keys[, opt]) >>
+Arguments:
 
-C<$keys> should be an I<ARRAYREF> of keys.
+=over 2
 
-All parameters in C<$opt> are the same as in C<get_count()>
+column_family, keys, columns, column_start, column_finish, super_column, consistency_level
+
+=back
 
 Returns a mapping of C<< key -> count >>
 
 =cut
 
 sub multiget_count {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $keys          = shift;
-	my $opt           = shift // {};
-
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
+	
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
 
 	my $predicate = Cassandra::SlicePredicate->new;
 
@@ -400,35 +418,30 @@ sub multiget_count {
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} ) {
-		$predicate->{column_names} = $opt->{columns};
+	if ( exists $arguments->{columns} ) {
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
-	my $level = $self->_consistency_level_read($opt);
-	my $cl    = $self->pool->get();
-	my $result =
-	  eval { $cl->multiget_count( $keys, $columnParent, $predicate, $level ) };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+	my $level = $self->_consistency_level_read($arguments);
+	
+	my $result =  $self->_run_query( 'multiget_count', $arguments->{'keys'}, $columnParent, $predicate, $level ) ;
+	
 	return $result;
 }
 
 =head2 get_range
 
-Usage: C<get_range( $column_family[, opt])>
-
-C<$opt> is a I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, super_column, consistency_level_read
+column_family, start, finish, columns, column_start, column_finish, column_reversed, column_count, row_count, super_column, consistency_level
 
 =back
 
@@ -437,15 +450,16 @@ Returns an I<HASH> of the form C<< { key => { column => value, column => value }
 =cut
 
 sub get_range {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $opt           = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
+	
 	my $columnParent =
 	  Cassandra::ColumnParent->new(
 							   {
-								 column_family => $column_family,
-								 super_column  => $opt->{super_column} // undef,
+								 column_family => $arguments->{column_family},
+								 super_column  => $arguments->{super_column},
 							   }
 	  );
 
@@ -455,85 +469,69 @@ sub get_range {
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} ) {
-		$predicate->{column_names} = $opt->{columns};
+	if ( exists $arguments->{columns} ) {
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
 
 	my $keyRange =
 	  Cassandra::KeyRange->new(
 								{
-								  start_key => $opt->{start}     // '',
-								  end_key   => $opt->{finish}    // '',
-								  count     => $opt->{row_count} // 100,
+								  start_key => $arguments->{start}     // '',
+								  end_key   => $arguments->{finish}    // '',
+								  count     => $arguments->{row_count} // 100,
 								}
 	  );
 
-	my $level  = $self->_consistency_level_read($opt);
-	my $cl     = $self->pool->get();
-	my $result = eval {
-		$cl->get_range_slices( $columnParent, $predicate, $keyRange, $level );
-	};
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-
+	my $level  = $self->_consistency_level_read($arguments);
+	
+	my $result =  $self->_run_query('get_range_slices', $columnParent, $predicate, $keyRange, $level );
+	
 	my $result_columns = ordered_hash();
 	foreach my $row(@$result) {
 		$result_columns->{$row->{key}} = ordered_hash();
 		foreach(@{$row->{columns}}){
-			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+			my $a = &_column_or_supercolumn_to_hash( $arguments->{column_family}, $_ );
 			@{$result_columns->{$row->{key}}}{keys %$a} = values %$a;
 		}
-	 };
-
+	};
+			
 	return $result_columns;
 }
 
 =head2 get_indexed_slices
 
-Usage: C<get_indexed_slices($column_family, $index_clause[, opt])>
-
-C<$index_clause> is an I<HASH> containing the following keys:
+Arguments:
 
 =over 2
 
-expression_list, start_key, row_count
+column_family, expression_list, start_key, row_count, columns, column_start, column_finish, column_reversed, column_count, consistency_level
+
+=back
 
 The I<expression_list> is an I<ARRAYREF> of I<ARRAYREF> containing C<<  $column[, $operator], $value >>. C<$operator> can be '=', '<', '>', '<=' or '>='.
-
-=back
-
-C<$opt> is an I<HASH> and can have the following keys:
-
-=over 2
-
-columns, column_start, column_finish, column_reversed, column_count, consistency_level_read
-
-=back
 
 Returns an I<HASH> of the form C<< { key => { column => value, column => value }, key => { column => value, column => value } } >>
 
 =cut
 
 sub get_indexed_slices {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $index_clause  = shift;
-	my $opt           = shift // {};
-
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
+	
 	my $expr_list;
 	my $predicate_args;
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
 
 	my @index_expr = map {
 		my ( $col, $op, $val ) = @$_;
@@ -545,49 +543,44 @@ sub get_indexed_slices {
 										   value => $val
 										 }
 		);
-	} @{ $index_clause->{'expression_list'} };
+	} @{ $arguments->{'expression_list'} };
 
 	my $index_clause_thrift =
 	  Cassandra::IndexClause->new(
 							   {
 								 expressions => \@index_expr,
-								 start_key => $index_clause->{start_key} // '',
-								 count => $index_clause->{row_count} // 100,
+								 start_key => $arguments->{start_key} // '',
+								 count => $arguments->{row_count} // 100,
 							   }
 	  );
 
-	my $predicate = Cassandra::SlicePredicate->new;
+	my $predicate = Cassandra::SlicePredicate->new();
 
 	#Cases
 	#1 - columns -> getslice with slicepredicate only
 	#2 - column_start and end -> getslice with slicerange
 
-	if ( exists $opt->{columns} ) {
-		$predicate->{column_names} = $opt->{columns};
+	if ( exists $arguments->{columns} ) {
+		$predicate->{column_names} = $arguments->{columns};
 	} else {
-		my $sliceRange = Cassandra::SliceRange->new($opt);
-		$sliceRange->{start}    = $opt->{column_start}    // '';
-		$sliceRange->{finish}   = $opt->{column_finish}   // '';
-		$sliceRange->{reversed} = $opt->{column_reversed} // 0;
-		$sliceRange->{count}    = $opt->{column_count}    // 100;
+		my $sliceRange = Cassandra::SliceRange->new();
+		$sliceRange->{start}    = $arguments->{column_start}    // '';
+		$sliceRange->{finish}   = $arguments->{column_finish}   // '';
+		$sliceRange->{reversed} = $arguments->{column_reversed} // 0;
+		$sliceRange->{count}    = $arguments->{column_count}    // 100;
 		$predicate->{slice_range} = $sliceRange;
 	}
 
-	my $level = $self->_consistency_level_read($opt);
+	my $level = $self->_consistency_level_read($arguments);
 
-	my $cl     = $self->pool->get();
-	my $result = eval {
-		$cl->get_indexed_slices( $columnParent, $index_clause_thrift,
+	my $result =  $self->_run_query('get_indexed_slices', $columnParent, $index_clause_thrift,
 								 $predicate, $level );
-	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
 
 	my $result_columns = ordered_hash();
 	foreach my $row(@$result) {
 		$result_columns->{$row->{key}} = ordered_hash();
 		foreach(@{$row->{columns}}){
-			my $a = $self->_column_or_supercolumn_to_hash( $column_family, $_ );
+			my $a = &_column_or_supercolumn_to_hash( $arguments->{column_family}, $_ );
 			@{$result_columns->{$row->{key}}}{keys %$a} = values %$a;
 		}
 	 };
@@ -597,31 +590,28 @@ sub get_indexed_slices {
 
 =head2 insert
 
-Usage: C<< insert($column_family, $key, $columns[, opt]) >>
-
-The C<$columns> is an I<HASHREF> of the form C<< { column => value, column => value } >>
-
-C<$opt> is an I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-timestamp, ttl, consistency_level_write
+column_family, key, columns, timestamp, ttl, consistency_level
 
 =back
+
+The C<$columns> is an I<HASHREF> of the form C<< { column => value, column => value } >>
 
 =cut
 
 sub insert {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $key           = shift;
-	my $columns       = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		timestamp => int (gettimeofday * 1000000),
+		@params
+	};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
-	my $level = $self->_consistency_level_write($opt);
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
+	my $level = $self->_consistency_level_write($arguments);
 	my @mutations = map {
 		Cassandra::Mutation->new(
 						{
@@ -632,54 +622,45 @@ sub insert {
 								   Cassandra::Column->new(
 									  {
 										name      => $_,
-										value     => $columns->{$_},
-										timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
-										ttl       => $opt->{ttl} // undef,
+										value     => $arguments->{columns}->{$_},
+										timestamp => $arguments->{timestamp},
+										ttl       => $arguments->{ttl},
 									  }
 								   )
 							   }
 							)
 						}
 		  )
-	} keys %$columns;
-
-	my $cl  = $self->pool->get();
-	my $res = eval {
-		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
-						   $level );
-	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	} keys % { $arguments->{columns} };
+	
+	$self->_run_query('batch_mutate', { $arguments->{key} => { $arguments->{column_family} => \@mutations } }, $level );
+	return $arguments->{timestamp};
 }
 
 =head2 insert_super
 
-Usage: C<< insert_super($column_family, $key, $columns[, opt]) >>
-
-The C<$columns> is an I<HASH> of the form C<< { super_column => { column => value, column => value } } >>
-
-C<$opt> is an I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-timestamp, ttl, consistency_level_write
+column_family, key, columns, timestamp, ttl, consistency_level
 
 =back
+
+The C<$columns> is an I<HASH> of the form C<< { super_column => { column => value, column => value } } >>
 
 =cut
 
 sub insert_super {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $key           = shift;
-	my $columns       = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		timestamp => int (gettimeofday * 1000000),
+		@params
+	};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
-	my $level = $self->_consistency_level_write($opt);
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
+	my $level = $self->_consistency_level_write($arguments);
 
 	my @mutations = map {
 		my $arg = $_;
@@ -695,64 +676,54 @@ sub insert_super {
 									 Cassandra::Column->new(
 											 {
 											   name  => $_,
-											   value => $columns->{$arg}->{$_},
-											   timestamp => $opt->{timestamp}
-												 // int (gettimeofday * 1000000),
-											   ttl => $opt->{ttl} // undef,
+											   value => $arguments->{columns}->{$arg}->{$_},
+											   timestamp => $arguments->{timestamp},
+											   ttl => $arguments->{ttl},
 											 }
 									   )
-								   } keys %{ $columns->{$arg} }
+								   } keys % { $arguments->{columns}->{$arg} }
 							 ],
-
 						  }
 					  )
 				   }
 			   )
 			}
 		  )
-	} keys %$columns;
+	} keys % {$arguments->{columns}};
 
-	my $cl  = $self->pool->get();
-	my $res = eval {
-		$cl->batch_mutate( { $key => { $column_family => \@mutations } },
-						   $level );
-	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	$self->_run_query( 'batch_mutate', { $arguments->{key} => { $arguments->{column_family} => \@mutations } }, $level );
+	return $arguments->{timestamp};
 }
 
 =head2 batch_insert
 
-Usage: C<batch_insert($column_family, $rows[, opt])>
-
-C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
-
-C<$opt> is an I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-timestamp, ttl, consistency_level_write
+column_family, rows, timestamp, ttl, consistency_level
 
 =back
+
+C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
 
 =cut
 
 sub batch_insert {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $rows          = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		timestamp => int (gettimeofday * 1000000),
+		@params
+	};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family } );
-	my $level = $self->_consistency_level_write($opt);
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family} } );
+	my $level = $self->_consistency_level_write($arguments);
 
 	my %mutation_map = map {
-		my $columns = $rows->{$_};
+		my $columns = $arguments->{rows}->{$_};
 		$_ => {
-			$column_family => [
+			$arguments->{column_family} => [
 				map {
 					my $column_name = $_;
 					Cassandra::Mutation->new(
@@ -769,8 +740,8 @@ sub batch_insert {
 													  {
 														 name      => $_,
 														 value     => $columns->{$column_name}->{$_},
-														 timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
-														 ttl       => $opt->{ttl} // undef,
+														 timestamp => $arguments->{timestamp},
+														 ttl       => $arguments->{ttl},
 													  }
 													)
 									   			} keys %{$columns->{$column_name}} ]
@@ -781,8 +752,8 @@ sub batch_insert {
 									  {
 										 name      => $_,
 										 value     => $columns->{$_},
-										 timestamp => $opt->{timestamp} // int (gettimeofday * 1000000),
-										 ttl       => $opt->{ttl} // undef,
+										 timestamp => $arguments->{timestamp},
+										 ttl       => $arguments->{ttl},
 									  }
 									)
 							   }
@@ -792,89 +763,75 @@ sub batch_insert {
 				  } keys %$columns
 			]
 		  }
-	} keys %$rows;
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	} keys % {$arguments->{rows}};
+	
+	$self->_run_query( 'batch_mutate', \%mutation_map, $level );
+	return $arguments->{timestamp};
 }
 
 =head2 add
 
-Usage: C<add($column_family, $key, $column, [$value [, opt]])>
-
-Increment or decrement counter C<$column> by C<$value>. C<$value> is 1 by default.
-
-C<$opt> is a I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-super_column, consistency_level_write
+column_family, key, column, value, super_column, consistency_level
 
 =back
+
+Increment or decrement counter C<$column> by C<$value>. C<$value> is 1 by default.
 
 =cut
 
 sub add {
-	my $self = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		value => 1,
+		@params
+	};
 
-	my $column_family = shift;
-	my $key           = shift;
-	my $column        = shift;
-	my $value         = shift;
-	$value = 1 unless defined $value;
-	my $opt           = shift || {};
-
-	my $level = $self->_consistency_level_write($opt);
+	my $level = $self->_consistency_level_write($arguments);
 	my $columnParent =
 	  Cassandra::ColumnParent->new(
 							   {
-								 column_family => $column_family,
-								 super_column  => $opt->{super_column} // undef,
+								 column_family => $arguments->{column_family},
+								 super_column  => $arguments->{super_column},
 							   }
 	  );
 	my $col =
-	  Cassandra::CounterColumn->new( { name => $column, value => $value } );
+	  Cassandra::CounterColumn->new( { name => $arguments->{column}, value => $arguments->{value} } );
 
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->add( $key, $columnParent, $col, $level ); 1 };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	return $self->_run_query('add', $arguments->{key}, $columnParent, $col, $level );
 }
 
 =head2 batch_add
 
-Usage: C<batch_add($column_family, $rows[, opt])>
-
-C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
-
-C<$opt> is an I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-consistency_level_write
+column_family, rows, consistency_level
 
 =back
+
+C<$rows> is an I<HASH> of the form C<< { key => { column => value , column => value }, key => { column => value , column => value } } >>
 
 =cut
 
 sub batch_add {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $rows          = shift;
-	my $opt           = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
 
 	my $columnParent =
-	  Cassandra::ColumnParent->new( { column_family => $column_family, super_column => $opt->{super_column} } );
-	my $level = $self->_consistency_level_write($opt);
+	  Cassandra::ColumnParent->new( { column_family => $arguments->{column_family}, super_column => $arguments->{super_column} } );
+	my $level = $self->_consistency_level_write($arguments);
 
-my %mutation_map = map {
-		my $columns = $rows->{$_};
+	my %mutation_map = map {
+		my $columns = $arguments->{rows}->{$_};
 		$_ => {
-			$column_family => [
+			$arguments->{column_family} => [
 				map {
 					my $column_name = $_;
 					Cassandra::Mutation->new(
@@ -910,87 +867,74 @@ my %mutation_map = map {
 				  } keys %$columns
 			]
 		  }
-	} keys %$rows;
+	} keys % {$arguments->{rows}};
 	
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->batch_mutate( \%mutation_map, $level ); };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	return $self->_run_query( 'batch_mutate', \%mutation_map, $level );
 }
 
 =head2 remove_counter
 
-Usage: C<remove_counter($column_family, $key, $column [, opt])>
-
 Remove counter C<$column> on C<$key>.
 
-C<$opt> is a I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-super_column, consistency_level_write
+column_family, key, column, super_column, consistency_level_write
 
 =back
 
 =cut
 
 sub remove_counter {
-	my $self = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
 
-	my $column_family = shift;
-	my $key           = shift;
-	my $column        = shift;
-	my $opt           = shift || {};
-
-	my $level = $self->_consistency_level_write($opt);
+	my $level = $self->_consistency_level_write($arguments);
 
 	my $columnPath =
 	  Cassandra::ColumnPath->new(
 							   {
-								 column_family => $column_family,
-								 super_column  => $opt->{super_column} // undef,
-								 column        => $column
+								 column_family => $arguments->{column_family},
+								 super_column  => $arguments->{super_column},
+								 column        => $arguments->{column}
 							   }
 	  );
 
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->remove_counter( $key, $columnPath, $level ) };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	return $res;
+	return $self->_run_query('remove_counter', $arguments->{key}, $columnPath, $level );
 }
 
 =head2 remove
 
-Usage: C<< remove($column_family[, $keys][, opt]) >>
+Arguments:
+
+=over 2
+
+column_family, keys, columns, super_column, write_consistency_level
+
+=back
 
 C<$keys> is a key or an I<ARRAY> of keys to be deleted.
 
 A removal whitout keys truncates the whole column_family.
-
-C<$opt> is an I<HASH> and can have the following keys:
-
-=over 2
-
-columns, super_column, write_consistency_level
-
-=back
 
 The timestamp used for remove is returned.
 
 =cut
 
 sub remove {
-	my $self = shift;
-
-	my $column_family = shift;
-	my $keys          = shift;
-	my $opt           = shift // {};
-
+	my ($self, @params) = @_;
+	my $arguments = {
+		@params
+	};
+	
 	my $timestamp = int (gettimeofday * 1000000);
-	my $level     = $self->_consistency_level_write($opt);
+	my $level     = $self->_consistency_level_write($arguments);
 
+	my $keys = $arguments->{'keys'} ? $arguments->{'keys'} : ( $arguments->{key} ? [$arguments->{key}] : undef );
+	
 	if ($keys) {
 
 		$keys = [$keys] unless UNIVERSAL::isa( $keys, 'ARRAY' );
@@ -999,13 +943,13 @@ sub remove {
 		  Cassandra::Deletion->new(
 							   {
 								 timestamp    => $timestamp,
-								 super_column => $opt->{super_column} // undef,
+								 super_column => $arguments->{super_column} // undef,
 							   }
 		  );
 
-		if ( exists $opt->{columns} ) {
+		if ( exists $arguments->{columns} ) {
 			$deletion->{predicate} = Cassandra::SlicePredicate->new(
-										  { column_names => $opt->{columns} } );
+										  { column_names => $arguments->{columns} } );
 		}
 
 		#		else {#Unsupported by Cassandra yet
@@ -1020,155 +964,158 @@ sub remove {
 		#		}
 
 		my %mutation_map = map {
-			$_ => { $column_family =>
+			$_ => { $arguments->{column_family} =>
 					[ Cassandra::Mutation->new( { deletion => $deletion, } ) ] }
 		} @{$keys};
-		my $cl = $self->pool->get();
-		eval { $cl->batch_mutate( \%mutation_map, $level ); };
-		if ($@) { print Dumper $@; $self->pool->fail($cl); return 0}
-		else    { $self->pool->put($cl) ;
-		return $timestamp}
-
+		$self->_run_query('batch_mutate', \%mutation_map, $level );
+		return $timestamp;
 	} else {
-		my $cl = $self->pool->get();
-		my $res = eval { $cl->truncate($column_family); };
-		if ($@) { print Dumper $@; $self->pool->fail($cl); return 0;}
-		else    { $self->pool->put($cl); return $res || 1 }
+		$self->_run_query('truncate', $arguments->{column_family});
+		return 1;
 	}
 }
 
 =head2 list_keyspace_cfs
 
-Usage: C<< list_keyspace_cfs() >>
+Arguments:
+
+=over 2
+
+=back
 
 Returns an HASH of C<< { column_family_name => column_family_type } >> where column family type is either C<Standard> or C<Super>
 
 =cut
 
 sub list_keyspace_cfs {
-	my $self = shift;
-	my $keyspace = shift || $self->keyspace;
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->describe_keyspace( $keyspace )->{cf_defs} };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-	
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		@params
+	};
+	my $res = $self->_run_query( 'describe_keyspace', $arguments->{keyspace} )->{cf_defs};	
 	return [ map { $_->{name} } @$res ];
 }
 
 =head2 create_column_family
 
-Usage C<< create_column_family($keyspace, $column_family[, $cfdef]) >>
+Arguments:
 
-Creates a new column family C<$column_family> in keyspace C<$keyspace>.
-C<$cfdef> is an HASH containing Column Family Definition options (column_type, comparator_type, etc.).
+=over 2
+
+keyspace, column_family, C<cfdef>
+
+=back
+
+C<cfdef> is any Column Family Definition option (column_type, comparator_type, etc.).
 
 =cut
 
 sub create_column_family {
-	my $self = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		@params
+	};
+	$arguments->{name} = $arguments->{column_family};
+	my $cfdef = Cassandra::CfDef->new($arguments);
 
-	my $keyspace      = shift;
-	my $column_family = shift;
-	my $opt           = shift // {};
-
-	$opt->{name}     = $column_family;
-	$opt->{keyspace} = $keyspace;
-
-	my $cfdef = Cassandra::CfDef->new($opt);
-
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_add_column_family($cfdef) ; $self->_wait_for_agreement() };
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-
+	my $res = $self->_run_query( 'system_add_column_family', $cfdef);
+	$self->_wait_for_agreement();
 	return $res;
 }
 
 =head2 create_keyspace
 
-Usage C<< create_keyspace($keyspace [, $opt]) >>
-
-C<$opt> is an I<HASH> and can have the following keys:
+Arguments:
 
 =over 2
 
-strategy
+keyspace, strategy, strategy_options
 
 =back
 
 =cut
 
 sub create_keyspace {
-	my $self = shift;
-
-	my $keyspace = shift;
-	my $opt = shift // {};
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		@params
+	};
 
 	my $params = {};
-	$params->{strategy_class} = $opt->{strategy} ||
-	  'org.apache.cassandra.locator.NetworkTopologyStrategy';
 
-	$params->{strategy_options} = $opt->{strategy_options} || 
-	  { 'datacenter1' => '1' };
+	$params->{strategy_class} =
+	  'org.apache.cassandra.locator.NetworkTopologyStrategy'
+	  unless $arguments->{strategy};
+
+	$params->{strategy_options} = { 'datacenter1' => '1' }
+	  unless $arguments->{strategy_options};
 
 	$params->{cf_defs} = [];
-	$params->{name}    = $keyspace;
+	$params->{name}    = $arguments->{keyspace};
 
 	my $ksdef = Cassandra::KsDef->new($params);
 
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_add_keyspace($ksdef) ; $self->_wait_for_agreement() };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+	my $res = $self->_run_query( 'system_add_keyspace', $ksdef);
+	$self->_wait_for_agreement();
 
 	return $res;
 }
 
 =head2 list_keyspaces
 
-Usage C<< list_keyspaces() >>
+Arguments:
+
+=over 2
+
+=back
 
 =cut
 
 sub list_keyspaces {
-
-	my $self = shift;
+	my ($self) = @_;
 
 	my $cl = $self->pool->get();
-	my $res = eval { $cl->describe_keyspaces() };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
-
-	$res = [ map { $_->{name} } @$res ];
-
-	return $res;
+	my $res = $self->_run_query( 'describe_keyspaces' );
+	return [ map { $_->{name} } @$res ];
 }
 
 =head2 drop_keyspace
 
-Usage C<< drop_keyspace($keyspace [, $opt]) >>
+Arguments:
+
+=over 2
+
+keyspace
+
+=back
 
 =cut
 
 sub drop_keyspace {
-	my $self     = shift;
-	my $keyspace = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		@params
+	};
 
-	my $cl = $self->pool->get();
-	my $res = eval { $cl->system_drop_keyspace($keyspace) ; $self->_wait_for_agreement() };
-
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+	my $res = $self->_run_query('system_drop_keyspace', $arguments->{keyspace});
+	$self->_wait_for_agreement();
 
 	return $res;
 }
 
 =head2 create_index
 
-Usage: C<< create_index($keyspace, $column_family, $columns, [$validation_class]) >>
+Arguments:
+
+=over 2
+
+keyspace, column_family, columns, validation_class
+
+=back
 
 Creates an index on C<$columns> of C<$column_family>.
 C<$columns> is an ARRAY of column names to be indexed.
@@ -1177,29 +1124,23 @@ C<$validation_class> only applies when C<$column> doesn't yet exist, and even th
 =cut
 
 sub create_index {
-	my $self = shift;
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		validation_class => 'org.apache.cassandra.db.marshal.BytesType',
+		@params
+	};
 
-	my $keyspace         = shift;
-	my $column_family    = shift;
-	my $columns          = shift;
-	my $validation_class = shift || 'org.apache.cassandra.db.marshal.BytesType';
+	my $columns = $arguments->{columns} ? $arguments->{columns}: undef;
 
 	if ( !UNIVERSAL::isa( $columns, 'ARRAY' ) ) {
 		$columns = [$columns];
 	}
 
-#get column family definition, substitute the target column with itself but indexed.
-
-	my $cl = $self->pool->get();
-
-	my $cfdef = eval {
-		[ grep { $_->{name} eq $column_family }
-		   @{ $cl->describe_keyspace($keyspace)->{cf_defs} } ]->[0];
-	};
-	if ($@) {
-		$self->pool->fail($cl);
-		die 'Cassandra Request Failed ' . $@;
-	}
+	#get column family definition, substitute the target column with itself but indexed.
+	my $cfdef =
+		[ grep { $_->{name} eq $arguments->{column_family} }
+		   @{ $self->_run_query('describe_keyspace', $arguments->{keyspace})->{cf_defs} } ]->[0];
 
 	my $newmetadata =
 	  { map { $_->{name} => $_ } @{ $cfdef->{column_metadata} } };
@@ -1209,7 +1150,7 @@ sub create_index {
 		  $newmetadata->{$col} // Cassandra::ColumnDef->new(
 									   {
 										 name             => $col,
-										 validation_class => $validation_class,
+										 validation_class => $arguments->{validation_class},
 									   }
 		  );
 		$newmetadata->{$col}->{index_type} = 0;
@@ -1219,35 +1160,37 @@ sub create_index {
 	$cfdef->{column_metadata} = [ values %$newmetadata ];
 
 	#print Dumper $cfdef;
-	my $res = eval { $cl->system_update_column_family($cfdef) ; $self->_wait_for_agreement() };
+	my $res = $self->_run_query('system_update_column_family',$cfdef );
+	$self->_wait_for_agreement();
 	
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
 	return $res;
 }
 
 =head2 ring
 
-Usage: C<< ring($keyspace) >>
+Arguments:
+
+=over 2
+
+keyspace
+
+=back
 
 Lists the addresses of all nodes on the cluster associated with the keyspace C<<$keyspace>>.
 
 =cut
 
 sub ring {
-
-	my $self = shift;
-
-	my $keyspace = shift || $self->keyspace;
-	my $cl = $self->pool->get();
-
-	my @result = eval {
+	my ($self, @params) = @_;
+	my $arguments = {
+		keyspace => $self->keyspace,
+		@params
+	};
+	
+	my @result = 
 		map {
 			map { $_ } @{ $_->{rpc_endpoints} }
-		} @{ $cl->describe_ring($keyspace) };
-	};
-	if ($@) { print Dumper $@; $self->pool->fail($cl) }
-	else    { $self->pool->put($cl) }
+		} @{ $self->_run_query('describe_ring', $arguments->{keyspace}) };
 
 	return \@result;
 }

@@ -24,8 +24,9 @@ Returns a string with the encoded composite type from the given components.
 
 sub composite {
 	my @args = @_;
-
-	#print "Input -> ". Dumper @{$args} ;
+	
+	@args = grep { defined($_) } @args;
+	#print "Input -> ". Dumper \@args;
 	my $res = join "", map {
 		my $component = $_ || '';
 		my $eoc       = "\x00";
@@ -48,11 +49,11 @@ sub composite_to_array {
 	my $size = length($name);
 	my @a;
 	my $len = 0;
-	do {
-		my $off += unpack( 'n', substr $name, $len, $len + 2 );
+	while ( $len < $size ) {
+		my $off = unpack( 'n', substr $name, $len, $len + 2 );
 		push @a, substr $name, $len + 2, $off;
 		$len += $off + 3;
-	} while ( $len < $size );
+	};
 
 	#print "Output ->". Dumper \@a;
 	return \@a;

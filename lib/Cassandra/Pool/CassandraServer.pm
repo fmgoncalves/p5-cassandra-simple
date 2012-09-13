@@ -6,10 +6,10 @@ use warnings;
 use Cassandra::Cassandra;
 use Cassandra::Types;
 use Thrift;
-eval "use Thrift::XS::BinaryProtocol";
-if ($@) {use Thrift::BinaryProtocol }
-use Thrift::FramedTransport;
 use Thrift::Socket;
+use Thrift::FramedTransport;
+#use Thrift::BinaryProtocol;
+use Thrift::XS::BinaryProtocol;
 
 use Data::Dumper;
 
@@ -26,31 +26,35 @@ sub new {
 
 	my $sock = Thrift::Socket->new( $server_name, $server_port );
 
-	my $transport = Thrift::FramedTransport->new( $sock, 1024, 1024 );
+	# $transport needs to be put in $self if using Thrift::XS::BinaryProtocol
+	# because the xs keeps only a reference to it and otherwise the object gets 
+	# destroyed once this function call ends (ie only the elements in $self 
+	# "survive")
+	$self->{transport} = Thrift::FramedTransport->new( $sock );
 
-	my $protocol = Thrift::BinaryProtocol->new($transport);
+	#my $protocol = Thrift::BinaryProtocol->new($transport);
+	my $protocol = Thrift::XS::BinaryProtocol->new($self->{transport});
 
 	$self->{client} = Cassandra::CassandraClient->new($protocol);
 
 	eval {
-		$transport->open;
+		$self->{transport}->open;
 
 		my $auth = Cassandra::AuthenticationRequest->new;
-		$auth->{credentials} = {
-								 username => $opt->{username} || '',
-								 password => $opt->{password} || ''
-		};
+		$auth->{credentials} = {};
+		$auth->{credentials}->{username} = $opt->{username} if $opt->{username};
+		$auth->{credentials}->{username} = $opt->{password} if $opt->{password};
 
-		$self->{client}->set_keyspace( $opt->{keyspace} );
+		$self->{client}->set_keyspace( $opt->{keyspace} ) if $opt->{keyspace};
 		$self->{client}->login($auth);
 	};
 
-	if ($!) {
+	if ($@) {
 		my $error = $@->{message} || $!;
-
-		die $error;
+#		print $error;
+		die $@;
 	}
-
+	
 	bless( $self, $class );
 	return $self;
 }
@@ -62,7 +66,7 @@ Closes a connection gracefully.
 sub close {
 	my $self = shift;
 	$self->{client}->{input}->getTransport()->close();
-	eval { $self->{client}->{output}->getTransport()->close(); };
+	return eval { $self->{client}->{output}->getTransport()->close(); };
 }
 
 =head
@@ -71,7 +75,7 @@ Closes a failed connection and ignores error (since this connection is known to 
 
 sub fail_close {
 	my $self = shift;
-	eval {
+	return eval {
 		$self->{client}->{input}->getTransport()->close();
 		$self->{client}->{output}->getTransport()->close();
 	};
@@ -94,8 +98,7 @@ Checks a connection.
 
 sub check {
 	my $self = shift;
-	return $self->{client}->{input}->getTransport()->isOpen()
-	  && $self->{client}->{output}->getTransport()->isOpen();
+	return $self->{client}->{input}->getTransport()->isOpen() && $self->{client}->{output}->getTransport()->isOpen();
 }
 
 =head
@@ -152,7 +155,8 @@ Returns: a reference to a ResourcePool::Resource object
 
 sub create_resource {
 	my $self = shift;
-	return new Cassandra::Pool::CassandraServer( $self->{params} );
+	my $server = Cassandra::Pool::CassandraServer->new( $self->{params} );
+	return $server;
 }
 
 1;

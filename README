@@ -2,7 +2,7 @@ NAME
     Cassandra::Simple
 
 VERSION
-    version 0.1
+    version 0.2
 
 DESCRIPTION
     Easy to use, Perl oriented client interface to Apache Cassandra.
@@ -16,200 +16,176 @@ SYNOPSYS
 
             my $conn = Cassandra::Simple->new(keyspace => $keyspace,);
 
-            $conn->create_column_family( $keyspace, $column_family);
+            $conn->create_column_family( column_family => $column_family);
 
-            $conn->insert($column_family, 'KeyA', { 'ColumnA' => 'AA' , 'ColumnB' => 'AB' } );
+            $conn->insert(column_family => $column_family, key => 'KeyA', columns => { 'ColumnA' => 'AA' , 'ColumnB' => 'AB' } );
 
-            $conn->get($column_family, 'KeyA');
-            $conn->get($column_family, 'KeyA', { columns => [ qw/ColumnA/ ] });
-            $conn->get($column_family, 'KeyA', { column_count => 1, column_reversed => 1 });
+            $conn->get(column_family => $column_family, key => 'KeyA');
+            $conn->get(column_family => $column_family, key => 'KeyA', columns => [ qw/ColumnA/ ]);
+            $conn->get(column_family => $column_family, key => 'KeyA', column_count => 1, column_reversed => 1);
 
-            $conn->batch_insert($column_family, { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
+            $conn->batch_insert(column_family => $column_family, rows => { 'KeyB' => [ [ 'ColumnA' => 'BA' ] , [ 'ColumnB' => 'BB' ] ], 'KeyC' => [ [ 'ColumnA' => 'CA' ] , [ 'ColumnD' => 'CD' ] ] });
 
-            $conn->multiget($column_family, [qw/KeyA KeyC/]);
+            $conn->multiget(column_family => $column_family, 'keys' => [qw/KeyA KeyC/]);
 
-            $conn->get_range($column_family, { start=> 'KeyA', finish => 'KeyB', column_count => 1 });
-            $conn->get_range($column_family);
+            $conn->get_range(column_family => $column_family, start => 'KeyA', finish => 'KeyB', column_count => 1 );
+            $conn->get_range(column_family => $column_family);
 
-            $conn->get_indexed_slices($column_family, { expression_list => [ [ 'ColumnA' => 'BA' ] ] });
+            $conn->get_indexed_slices(column_family => $column_family, expression_list => [ [ 'ColumnA' => 'BA' ] ]);
 
-            $conn->remove($column_family, [ 'KeyA' ], { columns => [ 'ColumnA' ]});
-            $conn->remove($column_family, [ 'KeyA' ]);
-            $conn->remove($column_family);
+            $conn->remove(column_family => $column_family, 'keys' => [ 'KeyA' ], columns => [ 'ColumnA' ]);
+            $conn->remove(column_family => $column_family, 'keys' => [ 'KeyA' ]);
+            $conn->remove(column_family => $column_family);
 
-            $conn->get_count($column_family, 'KeyA');
-            $conn->multiget_count($column_family, [ 'KeyB', 'KeyC' ]);
+            $conn->get_count(column_family => $column_family, key => 'KeyA');
+            $conn->multiget_count(column_family => $column_family, 'keys' => [ 'KeyB', 'KeyC' ]);
 
   get
-    Usage: "get($column_family, $key[, opt])"
+    Arguments:
 
-    $opt is a *HASH* and can have the following keys:
-
-      columns, column_start, column_finish, column_count, column_reversed,
-      super_column, consistency_level_read
+      column_family, key, columns, column_start, column_finish,
+      column_count, column_reversed, super_column, consistency_level
 
     Returns an HASH of the form "{ column => value, column => value }"
 
   multiget
-    Usage: "multiget($column_family, $keys[, opt])"
+    Arguments:
 
-    $keys should be an *ARRAYREF* of keys to fetch.
-
-    All parameters in $opt are the same as in "get()"
+      column_family, keys, columns, column_start, column_finish,
+      column_count, column_reversed, super_column, consistency_level
 
     Returns an HASH of the form "{ key => { column => value, column => value
     }, key => { column => value, column => value } }"
 
   get_count
-    Usage: "get_count($column_family, $key[, opt])"
+    Arguments:
 
-    $opt is a *HASH* and can have the following keys:
-
-      columns, column_start, column_finish, super_column,
-      consistency_level_read
+      column_family, key, columns, column_start, column_finish,
+      super_column, consistency_level
 
     Returns the count as an int
 
   multiget_count
-    Usage: "multiget_count($column_family, $keys[, opt])"
+    Arguments:
 
-    $keys should be an *ARRAYREF* of keys.
-
-    All parameters in $opt are the same as in "get_count()"
+      column_family, keys, columns, column_start, column_finish,
+      super_column, consistency_level
 
     Returns a mapping of "key -> count"
 
   get_range
-    Usage: "get_range( $column_family[, opt])"
+    Arguments:
 
-    $opt is a *HASH* and can have the following keys:
-
-      start, finish, columns, column_start, column_finish, column_reversed,
-      column_count, row_count, super_column, consistency_level_read
+      column_family, start, finish, columns, column_start, column_finish,
+      column_reversed, column_count, row_count, super_column,
+      consistency_level
 
     Returns an *HASH* of the form "{ key => { column => value, column =>
     value }, key => { column => value, column => value } }"
 
   get_indexed_slices
-    Usage: "get_indexed_slices($column_family, $index_clause[, opt])"
+    Arguments:
 
-    $index_clause is an *HASH* containing the following keys:
+      column_family, expression_list, start_key, row_count, columns,
+      column_start, column_finish, column_reversed, column_count,
+      consistency_level
 
-      expression_list, start_key, row_count
-
-      The *expression_list* is an *ARRAYREF* of *ARRAYREF* containing
-      "$column[, $operator], $value". $operator can be '=', '<', '>', '<='
-      or '>='.
-
-    $opt is an *HASH* and can have the following keys:
-
-      columns, column_start, column_finish, column_reversed, column_count,
-      consistency_level_read
+    The *expression_list* is an *ARRAYREF* of *ARRAYREF* containing
+    "$column[, $operator], $value". $operator can be '=', '<', '>', '<=' or
+    '>='.
 
     Returns an *HASH* of the form "{ key => { column => value, column =>
     value }, key => { column => value, column => value } }"
 
   insert
-    Usage: "insert($column_family, $key, $columns[, opt])"
+    Arguments:
+
+      column_family, key, columns, timestamp, ttl, consistency_level
 
     The $columns is an *HASHREF* of the form "{ column => value, column =>
     value }"
 
-    $opt is an *HASH* and can have the following keys:
-
-      timestamp, ttl, consistency_level_write
-
   insert_super
-    Usage: "insert_super($column_family, $key, $columns[, opt])"
+    Arguments:
+
+      column_family, key, columns, timestamp, ttl, consistency_level
 
     The $columns is an *HASH* of the form "{ super_column => { column =>
     value, column => value } }"
 
-    $opt is an *HASH* and can have the following keys:
-
-      timestamp, ttl, consistency_level_write
-
   batch_insert
-    Usage: "batch_insert($column_family, $rows[, opt])"
+    Arguments:
+
+      column_family, rows, timestamp, ttl, consistency_level
 
     $rows is an *HASH* of the form "{ key => { column => value , column =>
     value }, key => { column => value , column => value } }"
 
-    $opt is an *HASH* and can have the following keys:
-
-      timestamp, ttl, consistency_level_write
-
   add
-    Usage: "add($column_family, $key, $column, [$value [, opt]])"
+    Arguments:
+
+      column_family, key, column, value, super_column, consistency_level
 
     Increment or decrement counter $column by $value. $value is 1 by
     default.
 
-    $opt is a *HASH* and can have the following keys:
-
-      super_column, consistency_level_write
-
   batch_add
-    Usage: "batch_add($column_family, $rows[, opt])"
+    Arguments:
+
+      column_family, rows, consistency_level
 
     $rows is an *HASH* of the form "{ key => { column => value , column =>
     value }, key => { column => value , column => value } }"
 
-    $opt is an *HASH* and can have the following keys:
-
-      consistency_level_write
-
   remove_counter
-    Usage: "remove_counter($column_family, $key, $column [, opt])"
-
     Remove counter $column on $key.
 
-    $opt is a *HASH* and can have the following keys:
+    Arguments:
 
-      super_column, consistency_level_write
+      column_family, key, column, super_column, consistency_level_write
 
   remove
-    Usage: "remove($column_family[, $keys][, opt])"
+    Arguments:
+
+      column_family, keys, columns, super_column, write_consistency_level
 
     $keys is a key or an *ARRAY* of keys to be deleted.
 
     A removal whitout keys truncates the whole column_family.
 
-    $opt is an *HASH* and can have the following keys:
-
-      columns, super_column, write_consistency_level
-
     The timestamp used for remove is returned.
 
   list_keyspace_cfs
-    Usage: "list_keyspace_cfs()"
+    Arguments:
 
     Returns an HASH of "{ column_family_name => column_family_type }" where
     column family type is either "Standard" or "Super"
 
   create_column_family
-    Usage "create_column_family($keyspace, $column_family[, $cfdef])"
+    Arguments:
 
-    Creates a new column family $column_family in keyspace $keyspace. $cfdef
-    is an HASH containing Column Family Definition options (column_type,
+      keyspace, column_family, "cfdef"
+
+    "cfdef" is any Column Family Definition option (column_type,
     comparator_type, etc.).
 
   create_keyspace
-    Usage "create_keyspace($keyspace [, $opt])"
+    Arguments:
 
-    $opt is an *HASH* and can have the following keys:
-
-      strategy
+      keyspace, strategy, strategy_options
 
   list_keyspaces
-    Usage "list_keyspaces()"
+    Arguments:
 
   drop_keyspace
-    Usage "drop_keyspace($keyspace [, $opt])"
+    Arguments:
+
+      keyspace
 
   create_index
-    Usage: "create_index($keyspace, $column_family, $columns,
-    [$validation_class])"
+    Arguments:
+
+      keyspace, column_family, columns, validation_class
 
     Creates an index on $columns of $column_family. $columns is an ARRAY of
     column names to be indexed. $validation_class only applies when $column
@@ -217,7 +193,9 @@ SYNOPSYS
     *BytesType*).
 
   ring
-    Usage: "ring($keyspace)"
+    Arguments:
+
+      keyspace
 
     Lists the addresses of all nodes on the cluster associated with the
     keyspace "<$keyspace">.

@@ -9,13 +9,12 @@ WriteMakefile(
     PREREQ_PM         => {
         'Any::Moose' => '0',
         'Data::Dumper' => '0',
-	'Tie::IxHash' => '0',
+		'Tie::IxHash' => '0',
+		'Try::Tiny' => '0',
         'Class::Accessor' => '0',
         'Thrift' => '0',
-        'Thrift::BinaryProtocol' => '0',
-        'Thrift::FramedTransport' => '0',
+        'Thrift::XS' => '0',
         'ResourcePool' => '0',
-        'Thrift::Socket' => '0',
         'constant' => '0'
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
