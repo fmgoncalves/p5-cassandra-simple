@@ -50,7 +50,8 @@ sub new {
 	$loadbalancer->add_pool(
 		ResourcePool->new(
 			Cassandra::Pool::CassandraServerFactory->new($opt),
-			Weight => 100
+			Weight => 100,
+			Max => 100
 		)
 	);
 
@@ -73,7 +74,8 @@ sub add_pool {
 		$self->{pool}->add_pool(
 			ResourcePool->new(
 				Cassandra::Pool::CassandraServerFactory->new( \%params ),
-				PreCreate => 2
+				PreCreate => 2,
+				Max => 100
 			),
 			,
 			Weight => 60
