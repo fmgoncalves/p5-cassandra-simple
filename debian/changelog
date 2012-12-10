@@ -1,5 +1,58 @@
+libcassandra-simple-perl (0.2-1ubuntu1) UNRELEASED; urgency=low
+
+  [ Filipe Gonçalves ]
+  * Added keyspace manipulation methods. Fixed major bug (same keys in LoadBalancer) in Cassandra::Pool
+  * Corrected email address on debian/control
+  * Lowered debian dependencies versions.
+  * Use Thrift::XS when possible. Updated debian packaging.
+
+  [ José Borges Ferreira ]
+  * Add ResourcePool module dependency into Makefile.PL
+  * Fixed format
+
+  [ Filipe Gonçalves ]
+  * Insertions timestamp is now in microseconds.
+  * Fixed default timestamps from miliseconds to microseconds. Fixed default timestamps for removals
+
+  [ José Borges Ferreira ]
+  * Support for add_pool_from_ring() #1
+  * Support for add_pool_from_ring() #2
+
+  [ Filipe Gonçalves ]
+  * Refactored acquisition of keyspace definition.
+
+  [ José Borges Ferreira ]
+  * Add support for custom pool.
+
+  [ Filipe Gonçalves ]
+  * Don't wait for schema agreement on error.
+  * Update lib/Cassandra/Pool.pm
+  * Updated Cassandra::Simple POD
+  * Added weights to servers in pool. Modified examples for clarity.
+  * fixes #9 - adding 0 to counter column increases value by 1
+  * Added batch_add call to allow bulk update counters. fixes #8
+  * Result hashes are now ordered, allowing iteration. fixes #10
+  * adds super column suport for batch operations. fixes #8 (for real this time)
+  * Order of keys parameter on multiget is now respected in the result.
+  * Added debian dependencies of perl modules
+  * Revert "Added debian dependencies of perl modules"
+
+  [ José Borges Ferreira ]
+  * Missed your email
+
+  [ Filipe Gonçalves ]
+  * Dependency changed to Tie::IxHash from Tie::DxHash due to weird side-effects
+  * Undefined variables default to empty string on composites to avoid error packing
+  * fixes #16
+  * 	* Proper error handling. 	* Updated thrift generated code. 	* Updated API for easier and more reliable debugging. 	* Updated examples to match the changes. 	* Introduced LazyQuery for easy iteration over all query results.
+  * 	* fixed inconsistencies of previous refactoring.
+  * 	* Added LazyQuery test to examples dir.
+  * 	* Updated debian packaging info
+
+ -- Filipe Gonçalves <the.wa.syndrome@gmail.com>  Mon, 10 Dec 2012 12:38:48 +0000
+
 libcassandra-simple-perl (0.1-1) unstable; urgency=low
 
   * Initial Release.
 
- -- filipe <filipe@>  Thu, 15 Dec 2011 16:11:32 +0000
+ -- filipe <the.wa.syndrome@gmail.com>  Thu, 15 Dec 2011 16:11:32 +0000
