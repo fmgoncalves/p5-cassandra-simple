@@ -1,5 +1,5 @@
-Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
-Maintainer: Filipe Gonçalves <the.wa.syndrome@gmail>
+Format-Specification: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?view=markup&pathrev=135
+Maintainer: Filipe Gonçalves <the.wa.syndrome@gmail.com>
 Source: http://search.cpan.org/dist/Cassandra-Simple/
 Name: Cassandra-Simple
 DISCLAIMER: This copyright info was automatically extracted 
@@ -12,11 +12,11 @@ DISCLAIMER: This copyright info was automatically extracted
  with this file.
 
 Files: *
-Copyright: Filipe Gonçalves <the.wa.syndrome@gmail>
+Copyright: Filipe Gonçalves <the.wa.syndrome@gmail.com>
 License: 
 
 Files: debian/*
-Copyright: 2011, filipe <filipe@>
+Copyright: 2012, Filipe Gonçalves <the.wa.syndrome@gmail.com>
 License: Artistic or GPL-1+
 
 License: Artistic

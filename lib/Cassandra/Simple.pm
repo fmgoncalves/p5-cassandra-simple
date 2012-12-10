@@ -1287,13 +1287,13 @@ L<http://pycassa.github.com/pycassa/>
 
 =head1 AUTHOR
 
-Filipe Gonçalves C<< <the.wa.syndrome@gmail> >>
+Filipe Gonçalves C<< <the.wa.syndrome@gmail.com> >>
 
 =cut
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Filipe Gonçalves.
+This software is copyright (c) 2012 by Filipe Gonçalves.
 
 This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.
 
