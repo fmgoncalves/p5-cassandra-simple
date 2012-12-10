@@ -86,7 +86,7 @@ SYNOPSYS
   get_indexed_slices
     Arguments:
 
-      column_family, expression_list, start_key, row_count, columns,
+      column_family, expression_list, start, row_count, columns,
       column_start, column_finish, column_reversed, column_count,
       consistency_level
 

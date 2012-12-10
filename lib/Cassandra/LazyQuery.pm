@@ -5,7 +5,7 @@ use warnings;
 
 use Data::Dumper;
 
-my @row_level_queries = qw/get_range get_indexes_slices/;
+my @row_level_queries = qw/get_range get_indexed_slices/;
 my @column_level_queries = qw/get/;
 
 sub new {
@@ -18,15 +18,14 @@ sub new {
 	};
 	if( grep { /$method/ } @row_level_queries ){
 		$self->{pivot_field} = 'start';
-		$self->{pivot_value} = $self->{args}->{start};
 		$self->{limit} = 'row_count';
 	} elsif( grep { /$method/ } @column_level_queries ){
 		$self->{pivot_field} = 'column_start';
-		$self->{pivot_value} = $self->{args}->{column_start};
 		$self->{limit} = 'column_count';
 	} else {
 		die "Lazy query can only be used with the following methods: ".join(', ',@column_level_queries,@row_level_queries).".";
 	}
+	$self->{pivot_value} = $self->{args}->{$self->{pivot_field}};
 	bless( $self, $class );
 	return $self;
 }

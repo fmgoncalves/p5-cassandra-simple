@@ -196,7 +196,7 @@ sub _run_query {
 		return $result;
 	} catch {
 		switch (ref($_)){
-			case [ 'TSocket', 'Cassandra::UnavailableException', 'Cassandra::TimedOutException',  'SchemaDisagreementException' ]
+			case [ 'Thrift::TException', 'Cassandra::UnavailableException', 'Cassandra::TimedOutException',  'SchemaDisagreementException' ]
 				{ 
 					$self->pool->fail($cl);
 #					print 'Temporary failure ('.ref($_).'):'.$_->{why}."\n";
@@ -511,7 +511,7 @@ Arguments:
 
 =over 2
 
-column_family, expression_list, start_key, row_count, columns, column_start, column_finish, column_reversed, column_count, consistency_level
+column_family, expression_list, start, row_count, columns, column_start, column_finish, column_reversed, column_count, consistency_level
 
 =back
 
@@ -549,7 +549,7 @@ sub get_indexed_slices {
 	  Cassandra::IndexClause->new(
 							   {
 								 expressions => \@index_expr,
-								 start_key => $arguments->{start_key} // '',
+								 start_key => $arguments->{start} // '',
 								 count => $arguments->{row_count} // 100,
 							   }
 	  );
@@ -1154,7 +1154,7 @@ sub create_index {
 									   }
 		  );
 		$newmetadata->{$col}->{index_type} = 0;
-		$newmetadata->{$col}->{index_name} = $col . "_idx";
+		$newmetadata->{$col}->{index_name} = join($arguments->{column_family}, $col, "idx");
 	}
 
 	$cfdef->{column_metadata} = [ values %$newmetadata ];
