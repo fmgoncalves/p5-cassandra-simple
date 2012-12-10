@@ -86,7 +86,8 @@ sub add_pool_from_ring {
 	my $keyspace = shift || $self->{rcp_opts}->{keyspace};
 	if ($keyspace) {
 		my @nodes     = @{ $self->{pool}->get()->describe_ring($keyspace) };
-		my @nodes_ips = map {
+		my %aux; 
+		my @nodes_ips = grep  { $aux{$_}++ ? undef : $_ } map {
 			map { split( /\//, $_ ) }
 			  @{ $_->{rpc_endpoints} }
 		} @nodes;
