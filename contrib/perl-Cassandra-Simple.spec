@@ -16,25 +16,21 @@ Packager:	Sebastien Bariteau <numkem@gmail.com>
 License:	GPL
 Group:		Development
 URL:		https://github.com/fmgoncalves/p5-cassandra-simple
-buildroot: %{_tmppath}/%{name}-%{version}-%(id -u -n)
-buildarch: noarch
-Prefix:    %(echo %{_prefix})
-Source:    Cassandra-Simple-0.2.0.tar.gz
+buildroot:	%{_tmppath}/%{name}-%{version}-%(id -u -n)
+buildarch:	noarch
+Prefix:		%(echo %{_prefix})
+Source:		Cassandra-Simple-0.2.0.tar.gz
+Provides:	perl(Cassandra::Cassandra)
+Provides:	perl(Cassandra::Types)
+Provides:	perl(Cassandra::Simple)
 
-Requires: 	Thrift
+Requires: 	thrift-lib-perl >= 0.9.0
 Requires: 	perl-Bit-Vector
 Requires: 	perl-Cassandra-Simple
 Requires: 	perl-Tie-IxHash
-Requires:	perl-Thrift-XS
 
 %description
 A connection caching and pooling class.
-
-#
-# This package was generated automatically with the cpan2rpm
-# utility.  To get this software or for more information
-# please visit: http://perl.arix.com/
-#
 
 %prep
 %setup -q -n Cassandra-Simple-%{version} 
@@ -120,7 +116,8 @@ find %{buildroot}%{_prefix}             \
 
 %files -f %filelist
 %defattr(-,root,root)
+%{perl_sitelib}
 
 %changelog
-* Mon Dec 17 2012 Sebastien Bariteau <numkem@gmail.com>
+* Fri Dec 17 2012 Sebastien Bariteau <numkem@gmail.com>
 - Initial build.
