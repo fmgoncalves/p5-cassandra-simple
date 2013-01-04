@@ -16,10 +16,10 @@ sub new {
 		client => $client,
 		args => {@params}
 	};
-	if( grep { /$method/ } @row_level_queries ){
+	if( grep { $_ eq $method } @row_level_queries ){
 		$self->{pivot_field} = 'start';
 		$self->{limit} = 'row_count';
-	} elsif( grep { /$method/ } @column_level_queries ){
+	} elsif( grep { $_ eq $method } @column_level_queries ){
 		$self->{pivot_field} = 'column_start';
 		$self->{limit} = 'column_count';
 	} else {

@@ -58,16 +58,30 @@ print Dumper $conn->batch_insert(
 
 
 
-print '$query = $conn->get_indexed_slices( column_family => $column_family, expression_list => [ [ \'age\' => \'12\' ] ] )';
-my $query = $conn->lazy_query('get_indexed_slices', column_family => $column_family, expression_list => [ [ 'age' => '12' ] ] );
+print '$row_query = $conn->get_indexed_slices( column_family => $column_family, expression_list => [ [ \'age\' => \'12\' ] ] )';
+my $row_query = $conn->lazy_query('get_indexed_slices', column_family => $column_family, expression_list => [ [ 'age' => '12' ] ] );
 
 my $i = 0;
-while( my $res = $query->run(1) ){ # the value passed onto run is the number of results intended in this iteration
-	print "Res $i: ".Dumper $res;
+while( my $res = $row_query->run(1) ){ # the value passed onto run is the number of results intended in this iteration
+	#print "Res $i: ".Dumper $res;
 	$i++;
 }
 die "LazyQuery didn't traverse the keys correctly." unless $i == 10;
+print "lazy success\n";
 
+print '$conn->insert( column_family => $column_family, key => \'ChaveA\', columns =>{ \'ColunaA1\' => \'ValorA1\', \'ColunaA2\' => \'ValorA2\', \'ColunaA3\' => \'ValorA3\', \'ColunaA4\' => \'ValorA4\', \'ColunaA5\' => \'ValorA5\', \'ColunaA6\' => \'ValorA6\' } )';
+print Dumper $conn->insert( column_family => $column_family, key => 'ChaveA',
+			   columns =>{ 'ColunaA1' => 'ValorA1', 'ColunaA2' => 'ValorA2', 'ColunaA3' => 'ValorA3', 'ColunaA4' => 'ValorA4', 'ColunaA5' => 'ValorA5', 'ColunaA6' => 'ValorA6' } );
+
+print '$col_query = $conn->lazy_query(\'get\', column_family => $column_family, key => \'ChaveA\'';
+my $col_query = $conn->lazy_query('get', column_family => $column_family, key => 'ChaveA');
+$i=0;
+while( my $res = $col_query->run(2) ){
+        #print "Res $i: ".join("\n", keys %$res,'');
+        $i++;
+}
+die "LazyQuery didn't traverse the keys correctly." unless $i == 3;
+print "lazy success\n";
 
 print Dumper "\$conn->drop_keyspace()";
 print Dumper $sys_conn->drop_keyspace(keyspace => $keyspace);

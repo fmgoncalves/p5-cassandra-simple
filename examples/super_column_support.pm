@@ -52,8 +52,8 @@ print Dumper $conn->get(column_family => $column_family, key => 'KeyA', super_co
 print "\$conn->batch_insert($column_family, {'KeyB' => {'SuperColumnA' =>  {'SubColumnA' => 'BAA', 'SubColumnB' => 'BAB'}, 'SuperColumnB' => {'SubColumnA' => 'BBA', 'SubColumnB' => 'BBB'} }})";
 $conn->batch_insert(column_family => $column_family, rows => {'KeyB' => {'SuperColumnA' =>  {'SubColumnA' => 'BAA', 'SubColumnB' => 'BAB'}, 'SuperColumnB' => {'SubColumnA' => 'BBA', 'SubColumnB' => 'BBB'} }});
 
-print "\$conn->get_range($column_family, {start => 'KeyA', finish => 'KeyB', column_count => 1})";
-print Dumper $conn->get_range(column_family => $column_family, start => 'KeyA', finish => 'KeyB', column_count => 1);
+print "\$conn->get_range($column_family, { column_count => 1})";
+print Dumper $conn->get_range(column_family => $column_family, column_count => 1);
 #Expected result: 1 supercolumn and all respective subcolumns from keyA and keyB
 
 print "\$conn->get_range($column_family, {super_column => 'SuperColumnA', start => 'SubColumnA', finish => 'SubColumnB'})";
