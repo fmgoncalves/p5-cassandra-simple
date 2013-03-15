@@ -26,7 +26,6 @@ sub composite {
 	my @args = @_;
 	
 	@args = grep { defined($_) } @args;
-	#print "Input -> ". Dumper \@args;
 	my $res = join "", map {
 		my $component = $_ || '';
 		my $eoc       = "\x00";
@@ -34,29 +33,42 @@ sub composite {
 			( $component, my $last, my $inclusive ) = @{$component};
 			$eoc = !$inclusive ^ !$last ? "\xff" : "\x01";
 		}
+		use bytes;
 		pack( "n", length($component) ) . $component . $eoc;
 
 	} @args;
 
-	#print "Output -> ". $res;
 	return $res;
 }
 
 sub composite_to_array {
+	use bytes;
 	my $name = shift;
+	my @ret = ();
 
-	#print "Input -> ".Dumper $name;
 	my $size = length($name);
-	my @a;
+
+	if (! $size) {
+		return \@ret;
+	}
+
+	my @bytes = split //, $name;
 	my $len = 0;
 	while ( $len < $size ) {
-		my $off = unpack( 'n', substr $name, $len, $len + 2 );
-		push @a, substr $name, $len + 2, $off;
-		$len += $off + 3;
-	};
+		my $off = unpack( 'n', $bytes[$len].$bytes[$len+1] );
 
-	#print "Output ->". Dumper \@a;
-	return \@a;
+		my $comp = '';
+		for(1..$off) {
+			my $i = $_;
+			$comp .= $bytes[$len+1+$i];
+		}
+		
+		push @ret, $comp;
+		$len += $off + 3;
+	}
+
+	
+	return \@ret;
 }
 
 1;
