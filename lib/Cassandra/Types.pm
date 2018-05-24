@@ -17,6 +17,7 @@ use constant ALL => 5;
 use constant ANY => 6;
 use constant TWO => 7;
 use constant THREE => 8;
+use constant LOCAL_ONE => 11;
 package Cassandra::IndexOperator;
 use constant EQ => 0;
 use constant GTE => 1;
