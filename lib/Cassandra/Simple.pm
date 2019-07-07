@@ -320,8 +320,14 @@ sub multiget {
 		$predicate->{slice_range} = $sliceRange;
 	}
 	my $level = $self->_consistency_level_read($arguments);
-
-	my $result =  $self->_run_query('multiget_slice', $arguments->{keys}, $columnParent, $predicate, $level );
+	my @match = @{$arguments->{keys}};
+        my $result;
+	#if you don't have keys don't allow run query
+        if(scalar @match != 0){
+                $result =  $self->_run_query('multiget_slice', $arguments->{keys}, $columnParent, $predicate, $level );
+        }else{
+                return $result;
+        }	
 		
 	my $result_columns = ordered_hash();
 	foreach my $key (@{$arguments->{keys}}) {
