@@ -7,7 +7,7 @@ WriteMakefile(
     VERSION_FROM      => 'lib/Cassandra/Simple.pm', # finds $VERSION
     LICENSE           => 'perl',
     PREREQ_PM         => {
-        'Any::Moose' => '0',
+        'Moose' => '0',
         'Data::Dumper' => '0',
 		'Tie::IxHash' => '0',
 		'Try::Tiny' => '0',

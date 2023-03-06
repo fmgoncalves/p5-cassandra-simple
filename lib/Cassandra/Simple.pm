@@ -56,11 +56,11 @@ This module attempts to abstract the underlying Thrift methods as much as possib
 use strict;
 use warnings;
 
-our $VERSION = "0.2";
+our $VERSION = "0.3";
 
 use Data::Dumper;
 
-use Any::Moose;
+use Moose;
 has 'pool' => ( is => 'rw', isa => 'Cassandra::Pool', lazy_build => 1 );
 has 'consistency_level_read' =>
   ( is => 'rw', isa => 'Str', default => 'LOCAL_QUORUM' );
